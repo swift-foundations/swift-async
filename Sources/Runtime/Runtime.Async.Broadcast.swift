@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import StandardsCollections
 import Synchronization
 
 extension Runtime.Async {
@@ -65,11 +66,26 @@ extension Runtime.Async {
 
 extension Runtime.Async.Broadcast {
     struct State {
-        var buffer: [(index: UInt64, element: Element)] = []
+        var buffer: Deque<(index: UInt64, element: Element)> = .init()
         var nextIndex: UInt64 = 0
-        var subscribers: [UInt64: SubscriberState] = [:]
+        var subscribers: Dictionary<UInt64, SubscriberState>.Ordered = .init()
+        var cursorHeap: Heap<UInt64> = .min()  // Lazy-cleaned min-heap of subscriber cursors
         var nextSubscriberID: UInt64 = 0
         var isFinished: Bool = false
+
+        /// Get the minimum cursor, cleaning stale values from heap.
+        ///
+        /// Cursors only increase and subscribers can be removed, so heap may contain
+        /// stale values. This method lazily cleans them during lookup.
+        mutating func minCursor() -> UInt64? {
+            while let min = cursorHeap.peek() {
+                if subscribers.values.contains(where: { $0.cursor == min }) {
+                    return min
+                }
+                _ = cursorHeap.pop()
+            }
+            return nil
+        }
     }
 
     struct SubscriberState {
@@ -97,13 +113,13 @@ extension Runtime.Async.Broadcast {
             state.nextIndex += 1
 
             // Add to buffer
-            state.buffer.append((index, element))
+            state.buffer.push.back((index, element))
 
             // Trim buffer if needed (keep elements that some subscriber hasn't seen yet)
-            let minCursor = state.subscribers.values.map(\.cursor).min() ?? index
+            let minCursor = state.minCursor() ?? index
             while state.buffer.count > bufferCapacity {
-                if state.buffer.first!.index < minCursor {
-                    state.buffer.removeFirst()
+                if let front = state.buffer.peek.front, front.index < minCursor {
+                    _ = state.buffer.take.front
                 } else {
                     break
                 }
@@ -114,6 +130,7 @@ extension Runtime.Async.Broadcast {
             for (id, var subscriber) in state.subscribers {
                 if subscriber.cursor == index, let cont = subscriber.continuation {
                     subscriber.cursor = index + 1
+                    state.cursorHeap.push(subscriber.cursor)  // Track new cursor position
                     subscriber.continuation = nil
                     state.subscribers[id] = subscriber
                     toResume.append((cont, element))
@@ -177,6 +194,7 @@ extension Runtime.Async.Broadcast {
             state.nextSubscriberID += 1
             let cursor = state.nextIndex
             state.subscribers[id] = SubscriberState(cursor: cursor, continuation: nil)
+            state.cursorHeap.push(cursor)  // Track initial cursor position
             return (id, cursor)
         }
         return Subscription(broadcast: self, id: id, cursor: cursor)
@@ -203,7 +221,7 @@ extension Runtime.Async.Broadcast {
         /// Unsubscribe and release resources.
         public func cancel() {
             let continuationToCancel: CheckedContinuation<Element?, Never>? = broadcast._state.withLock { state -> CheckedContinuation<Element?, Never>? in
-                guard let subscriber = state.subscribers.removeValue(forKey: id) else { return nil }
+                guard let subscriber = state.subscribers.values.remove(id) else { return nil }
                 return subscriber.continuation
             }
             continuationToCancel?.resume(returning: nil)
@@ -225,6 +243,7 @@ extension Runtime.Async.Broadcast {
                         if let entry = state.buffer.first(where: { $0.index >= subscriber.cursor }) {
                             if entry.index == subscriber.cursor {
                                 subscriber.cursor += 1
+                                state.cursorHeap.push(subscriber.cursor)  // Track new cursor position
                                 state.subscribers[id] = subscriber
                                 return Optional<Element?>.some(entry.element)
                             }
