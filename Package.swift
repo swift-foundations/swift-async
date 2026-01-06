@@ -25,6 +25,7 @@ let package = Package(
             name: "Runtime",
             dependencies: [
                 .product(name: "Kernel", package: "swift-kernel"),
+                .product(name: "StandardsCollections", package: "swift-standards"),
             ]
         ),
         .testTarget(

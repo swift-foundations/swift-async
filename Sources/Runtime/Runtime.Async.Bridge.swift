@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import StandardsCollections
 import Synchronization
 
 extension Runtime.Async {
@@ -55,7 +56,7 @@ extension Runtime.Async {
         private let _state: Mutex<State>
 
         struct State {
-            var buffer: [Element] = []
+            var buffer: Deque<Element> = .init()
             var continuation: CheckedContinuation<Element?, Never>?
             var isFinished: Bool = false
             #if DEBUG
@@ -86,7 +87,7 @@ extension Runtime.Async {
                     #endif
                     return cont
                 } else {
-                    state.buffer.append(element)
+                    state.buffer.push.back(element)
                     return nil
                 }
             }
@@ -120,13 +121,13 @@ extension Runtime.Async {
                         // Resume with first, queue rest
                         if count > 1 {
                             for i in 1..<count {
-                                state.buffer.append(elements[i])
+                                state.buffer.push.back(elements[i])
                             }
                         }
                         return (cont, first)
                     } else {
                         for i in 0..<count {
-                            state.buffer.append(elements[i])
+                            state.buffer.push.back(elements[i])
                         }
                         return (nil, nil)
                     }
@@ -165,8 +166,7 @@ extension Runtime.Async {
                     )
                     #endif
 
-                    if !state.buffer.isEmpty {
-                        let element = state.buffer.removeFirst()
+                    if let element = state.buffer.take.front {
                         return (false, .some(element))
                     }
                     if state.isFinished {

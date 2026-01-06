@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import StandardsCollections
 import Synchronization
 
 extension Runtime.Mutex {
@@ -44,11 +45,11 @@ extension Runtime.Mutex {
     /// Uses `@unchecked Sendable` because internal state is protected
     /// by mutex synchronization.
     public final class Queue<Element: Sendable>: @unchecked Sendable {
-        private let _mutex: Mutex<Storage>
+        private let _mutex: Mutex<Deque<Element>>
 
         /// Creates an empty queue.
         public init() {
-            self._mutex = Mutex(Storage())
+            self._mutex = Mutex(Deque())
         }
 
         /// Adds an element to the back of the queue.
@@ -56,8 +57,8 @@ extension Runtime.Mutex {
         /// - Parameter element: The element to add.
         /// - Complexity: O(1) amortized.
         public func enqueue(_ element: Element) {
-            _mutex.withLock { storage in
-                storage.buffer.append(element)
+            _mutex.withLock { buffer in
+                buffer.push.back(element)
             }
         }
 
@@ -70,26 +71,12 @@ extension Runtime.Mutex {
 
         /// Whether the queue is empty.
         public var isEmpty: Bool {
-            _mutex.withLock { $0.buffer.isEmpty }
+            _mutex.withLock { $0.isEmpty }
         }
 
         /// The number of elements in the queue.
         public var count: Int {
-            _mutex.withLock { $0.buffer.count }
-        }
-    }
-}
-
-// MARK: - Storage
-
-extension Runtime.Mutex.Queue {
-    struct Storage {
-        var buffer: [Element]
-        var headIndex: Int
-
-        init() {
-            self.buffer = []
-            self.headIndex = 0
+            _mutex.withLock { $0.count }
         }
     }
 }
@@ -111,22 +98,10 @@ extension Runtime.Mutex.Queue {
         /// Removes and returns the front element, or `nil` if empty.
         ///
         /// - Returns: The front element, or `nil` if the queue is empty.
-        /// - Complexity: O(1) amortized (compacts buffer when head exceeds half).
+        /// - Complexity: O(1) amortized.
         public func one() -> Element? {
-            queue._mutex.withLock { storage in
-                guard storage.headIndex < storage.buffer.count else {
-                    return nil
-                }
-                let element = storage.buffer[storage.headIndex]
-                storage.headIndex += 1
-
-                // Compact when head exceeds half the buffer
-                if storage.headIndex > storage.buffer.count / 2 && storage.headIndex > 16 {
-                    storage.buffer.removeFirst(storage.headIndex)
-                    storage.headIndex = 0
-                }
-
-                return element
+            queue._mutex.withLock { buffer in
+                buffer.take.front
             }
         }
 
@@ -135,13 +110,12 @@ extension Runtime.Mutex.Queue {
         /// - Returns: All elements in FIFO order, or empty array if queue is empty.
         /// - Complexity: O(n) where n is the number of elements.
         public func all() -> [Element] {
-            queue._mutex.withLock { storage in
-                guard storage.headIndex < storage.buffer.count else {
-                    return []
+            queue._mutex.withLock { buffer in
+                var elements: [Element] = []
+                elements.reserveCapacity(buffer.count)
+                while let element = buffer.take.front {
+                    elements.append(element)
                 }
-                let elements = Array(storage.buffer[storage.headIndex...])
-                storage.buffer.removeAll(keepingCapacity: true)
-                storage.headIndex = 0
                 return elements
             }
         }
@@ -149,19 +123,17 @@ extension Runtime.Mutex.Queue {
         /// Drains all elements into an existing buffer.
         ///
         /// More efficient than `all()` when reusing a pre-allocated buffer.
-        /// - Parameter buffer: Buffer to append elements to.
+        /// - Parameter target: Buffer to append elements to.
         /// - Returns: Number of elements drained.
         /// - Complexity: O(n) where n is the number of elements.
         @discardableResult
-        public func all(into buffer: inout [Element]) -> Int {
-            queue._mutex.withLock { storage in
-                guard storage.headIndex < storage.buffer.count else {
-                    return 0
+        public func all(into target: inout [Element]) -> Int {
+            queue._mutex.withLock { buffer in
+                var count = 0
+                while let element = buffer.take.front {
+                    target.append(element)
+                    count += 1
                 }
-                let count = storage.buffer.count - storage.headIndex
-                buffer.append(contentsOf: storage.buffer[storage.headIndex...])
-                storage.buffer.removeAll(keepingCapacity: true)
-                storage.headIndex = 0
                 return count
             }
         }
