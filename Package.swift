@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "swift-runtime",
+    name: "swift-async",
     platforms: [
         .macOS(.v26),
         .iOS(.v26),
@@ -12,29 +12,64 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "Runtime",
-            targets: ["Runtime"]
+            name: "Async",
+            targets: ["Async"]
+        ),
+        .library(
+            name: "Async Primitives",
+            targets: ["Async Primitives"]
+        ),
+        .library(
+            name: "Async Stream",
+            targets: ["Async Stream"]
         ),
     ],
     dependencies: [
         .package(path: "../swift-kernel"),
+        .package(path: "../swift-buffer"),
         .package(path: "../../swift-standards/swift-standards")
     ],
     targets: [
         .target(
-            name: "Runtime",
+            name: "Async Primitives",
             dependencies: [
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "StandardsCollections", package: "swift-standards"),
-            ]
+            ],
+            path: "Sources/Async Primitives"
+        ),
+        .target(
+            name: "Async Stream",
+            dependencies: [
+                "Async Primitives",
+                .product(name: "Kernel", package: "swift-kernel"),
+                .product(name: "Buffer", package: "swift-buffer"),
+            ],
+            path: "Sources/Async Stream"
+        ),
+        .target(
+            name: "Async",
+            dependencies: [
+                "Async Primitives",
+                "Async Stream",
+            ],
+            path: "Sources/Async"
         ),
         .testTarget(
-            name: "Runtime Tests",
+            name: "Async Primitives Tests",
             dependencies: [
-                "Runtime",
+                "Async Primitives",
                 .product(name: "StandardsTestSupport", package: "swift-standards")
             ],
-            path: "Tests/Runtime Tests"
+            path: "Tests/Async Primitives Tests"
+        ),
+        .testTarget(
+            name: "Async Stream Tests",
+            dependencies: [
+                "Async Stream",
+                .product(name: "StandardsTestSupport", package: "swift-standards")
+            ],
+            path: "Tests/Async Stream Tests"
         ),
     ]
 )
