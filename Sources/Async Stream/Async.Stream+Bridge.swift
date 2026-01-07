@@ -129,13 +129,10 @@ extension Async.Stream {
     public func forward(to channel: Async.Channel.Bounded<Element>) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do {
+                do throws(Async.Channel.Error) {
                     try await channel.send(element)
                 } catch {
-                    switch error {
-                    case .closed, .cancelled:
-                        break forwarding
-                    }
+                    break forwarding
                 }
             }
             channel.close()
