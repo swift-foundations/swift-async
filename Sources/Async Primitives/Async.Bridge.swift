@@ -146,7 +146,7 @@ extension Async {
         ///
         /// - Parameter elements: The elements to deliver.
         public func push<S: Sequence>(contentsOf elements: S) where S.Element == Element {
-            push(Array(elements))
+            push(Swift.Array(elements))
         }
 
         /// Wait for the next element (async, suspends if none available).

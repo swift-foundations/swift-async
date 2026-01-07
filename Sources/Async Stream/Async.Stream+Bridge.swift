@@ -86,7 +86,7 @@ extension Async.Stream {
     public init(from channel: Async.Channel.Bounded<Element>) {
         self.init {
             Iterator {
-                await channel.receive()
+                try? await channel.receive()
             }
         }
     }
@@ -128,8 +128,15 @@ extension Async.Stream {
     @discardableResult
     public func forward(to channel: Async.Channel.Bounded<Element>) -> Task<Void, Never> {
         Task {
-            for await element in self {
-                _ = await channel.send(element)
+            forwarding: for await element in self {
+                do {
+                    try await channel.send(element)
+                } catch {
+                    switch error {
+                    case .closed, .cancelled:
+                        break forwarding
+                    }
+                }
             }
             channel.close()
         }
