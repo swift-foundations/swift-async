@@ -11,7 +11,6 @@
 
 import Testing
 import Async
-@testable import Async_Async
 
 @Suite("Async.Stream")
 struct StreamTests {

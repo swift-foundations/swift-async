@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import StandardsCollections
+
 // MARK: - Receive Accessor
 
 extension Async.Channel.Bounded {
@@ -55,7 +57,11 @@ extension Async.Channel.Bounded.Receive {
         }
 
         switch fastAction {
-        case .returnElement(let element, let resumeSender):
+        case .returnElement(let element, let resumeSender, var cancelled):
+            // Resume cancelled senders first (minimizes stuck time)
+            while let c = cancelled.take.front {
+                c.resume(returning: .cancelled)
+            }
             resumeSender?.resume(returning: nil)
             return element
         case .returnNil:
@@ -74,7 +80,11 @@ extension Async.Channel.Bounded.Receive {
                 }
 
                 switch action {
-                case .returnElement(let element, let resumeSender):
+                case .returnElement(let element, let resumeSender, var cancelled):
+                    // Resume cancelled senders first (minimizes stuck time)
+                    while let c = cancelled.take.front {
+                        c.resume(returning: .cancelled)
+                    }
                     resumeSender?.resume(returning: nil)
                     continuation.resume(returning: (element, nil))
                 case .returnNil:
@@ -112,7 +122,11 @@ extension Async.Channel.Bounded.Receive {
         }
 
         switch action {
-        case .returnElement(let element, let resumeSender):
+        case .returnElement(let element, let resumeSender, var cancelled):
+            // Resume cancelled senders first (minimizes stuck time)
+            while let c = cancelled.take.front {
+                c.resume(returning: .cancelled)
+            }
             resumeSender?.resume(returning: nil)
             return element
         case .returnNil, .rejectCancelled, .suspend:

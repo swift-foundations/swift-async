@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+internal import StandardsCollections
+
 extension Async.Channel {
     /// Bounded channel with backpressure.
     ///
@@ -76,7 +78,7 @@ extension Async.Channel.Bounded {
     /// - Future `send()` calls throw `Error.closed`
     /// - Pending `send()` calls throw `Error.closed`
     public func close() {
-        let closeAction = storage.withLock { state in
+        var closeAction = storage.withLock { state in
             state.close()
         }
 
@@ -84,7 +86,7 @@ extension Async.Channel.Bounded {
         closeAction.receiverToResume?.resume(returning: (nil, nil))
 
         // Cancel all waiting senders
-        for continuation in closeAction.sendersToCancel {
+        while let continuation = closeAction.sendersToCancel.take.front {
             continuation.resume(returning: .closed)
         }
     }

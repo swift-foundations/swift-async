@@ -16,20 +16,18 @@ import Testing
 struct BoundedChannelTests {
 
     @Test("Send and receive single element")
-    func sendReceiveSingleElement() async {
+    func sendReceiveSingleElement() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
-        let sent = await channel.send(42)
-        #expect(sent == true)
+        try await channel.send(42)
         channel.close()
-        let value = await channel.receive()
+        let value = try await channel.receive()
         #expect(value == 42)
     }
 
-    @Test("Send returns true when channel has space")
-    func sendReturnsTrue() async {
+    @Test("Send succeeds when channel has space")
+    func sendSucceeds() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 10)
-        let result = await channel.send(42)
-        #expect(result == true)
+        try await channel.send(42)
         channel.close()
     }
 
@@ -37,8 +35,14 @@ struct BoundedChannelTests {
     func closedChannelRejectsSend() async {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
         channel.close()
-        let result = await channel.send(42)
-        #expect(result == false)
+        do {
+            try await channel.send(42)
+            Issue.record("Expected send to throw .closed")
+        } catch .closed {
+            // Expected
+        } catch {
+            Issue.record("Expected .closed but got \(error)")
+        }
     }
 
     @Test("Try send returns false when full")
@@ -51,15 +55,15 @@ struct BoundedChannelTests {
     }
 
     @Test("Receive returns nil after close and drain")
-    func receiveReturnsNilAfterCloseAndDrain() async {
+    func receiveReturnsNilAfterCloseAndDrain() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 10)
-        _ = await channel.send(1)
-        _ = await channel.send(2)
+        try await channel.send(1)
+        try await channel.send(2)
         channel.close()
 
-        let first = await channel.receive()
-        let second = await channel.receive()
-        let third = await channel.receive()
+        let first = try await channel.receive()
+        let second = try await channel.receive()
+        let third = try await channel.receive()
 
         #expect(first == 1)
         #expect(second == 2)
@@ -74,9 +78,9 @@ struct BoundedChannelTests {
     }
 
     @Test("Try receive returns element when available")
-    func tryReceiveReturnsElement() async {
+    func tryReceiveReturnsElement() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
-        _ = await channel.send(42)
+        try await channel.send(42)
         let result = channel.receive.tryOne()
         #expect(result == 42)
     }
@@ -90,32 +94,32 @@ struct BoundedChannelTests {
     }
 
     @Test("Receive suspends until element available")
-    func receiveSuspendsUntilElement() async {
+    func receiveSuspendsUntilElement() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
 
         // Start receive in background
         let receiveTask = Task {
-            await channel.receive()
+            try await channel.receive()
         }
 
         // Give task time to start waiting
         try? await Task.sleep(for: .milliseconds(10))
 
         // Send element
-        _ = await channel.send(42)
+        try await channel.send(42)
 
         // Receive should complete with the element
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == 42)
     }
 
     @Test("Receive resumes with nil on close")
-    func receiveResumesOnClose() async {
+    func receiveResumesOnClose() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
 
         // Start receive in background
         let receiveTask = Task {
-            await channel.receive()
+            try await channel.receive()
         }
 
         // Give task time to start waiting
@@ -125,48 +129,54 @@ struct BoundedChannelTests {
         channel.close()
 
         // Receive should complete with nil
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == nil)
     }
 
     @Test("Send suspends when buffer is full")
-    func sendSuspendsWhenFull() async {
+    func sendSuspendsWhenFull() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
 
         // Fill the buffer
-        _ = await channel.send(1)
+        try await channel.send(1)
 
         // Start another send in background (should suspend)
         let sendTask = Task {
-            await channel.send(2)
+            try await channel.send(2)
         }
 
         // Give task time to start waiting
         try? await Task.sleep(for: .milliseconds(10))
 
         // Receive to make space
-        let first = await channel.receive()
+        let first = try await channel.receive()
         #expect(first == 1)
 
-        // Send should complete
-        let sent = await sendTask.value
-        #expect(sent == true)
+        // Send should complete without error
+        try await sendTask.value
 
         // Get the second element
-        let second = await channel.receive()
+        let second = try await channel.receive()
         #expect(second == 2)
     }
 
     @Test("Close cancels pending sends")
-    func closeCancelsPendingSends() async {
+    func closeCancelsPendingSends() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
 
         // Fill the buffer
-        _ = await channel.send(1)
+        try await channel.send(1)
 
         // Start another send in background (should suspend)
-        let sendTask = Task {
-            await channel.send(2)
+        let sendTask = Task { () -> Async.Channel.Error? in
+            do {
+                try await channel.send(2)
+                return nil
+            } catch let error as Async.Channel.Error {
+                return error
+            } catch {
+                return nil
+            }
         }
 
         // Give task time to start waiting
@@ -175,51 +185,50 @@ struct BoundedChannelTests {
         // Close the channel
         channel.close()
 
-        // Send should return false
-        let sent = await sendTask.value
-        #expect(sent == false)
+        // Send should return .closed error
+        let error = await sendTask.value
+        #expect(error == .closed)
     }
 
     @Test("Backpressure maintains order")
-    func backpressureMaintainsOrder() async {
+    func backpressureMaintainsOrder() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 2)
 
         // Producer task
         let producer = Task {
             for i in 1...5 {
-                _ = await channel.send(i)
+                try await channel.send(i)
             }
             channel.close()
         }
 
         // Consumer task
         var received: [Int] = []
-        while let value = await channel.receive() {
+        while let value = try await channel.receive() {
             received.append(value)
         }
 
-        await producer.value
+        try await producer.value
 
         #expect(received == [1, 2, 3, 4, 5])
     }
 
     @Test("Direct delivery when receiver waiting")
-    func directDeliveryWhenReceiverWaiting() async {
+    func directDeliveryWhenReceiverWaiting() async throws {
         let channel = Async.Channel.Bounded<Int>(capacity: 1)
 
         // Start receive in background
         let receiveTask = Task {
-            await channel.receive()
+            try await channel.receive()
         }
 
         // Give task time to start waiting
         try? await Task.sleep(for: .milliseconds(10))
 
         // Send should deliver directly without buffering
-        let sent = await channel.send(42)
-        #expect(sent == true)
+        try await channel.send(42)
 
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == 42)
     }
 }

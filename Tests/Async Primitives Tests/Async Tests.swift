@@ -12,13 +12,12 @@
 import Async
 import Testing
 
-@Suite("Runtime")
-struct RuntimeTests {
+@Suite("Async")
+struct AsyncTests {
 
-    @Test("Runtime namespace exists")
+    @Test("Async namespace exists")
     func namespaceExists() {
-        _ = Runtime.self
-        _ = Runtime.Mutex.self
         _ = Async.self
+        _ = Async.Channel.self
     }
 }

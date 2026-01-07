@@ -33,7 +33,7 @@ extension Async.Channel.Bounded {
         init(capacity: Int) {
             self.phase = .open(
                 buffer: Deque(),
-                senders: Async.Array.Tiny(),
+                senders: Deque(),
                 receiver: nil
             )
             self.capacity = capacity
@@ -49,7 +49,7 @@ extension Async.Channel.Bounded.State {
         /// Channel is open and operational.
         case open(
             buffer: Deque<Element>,
-            senders: Async.Array.Tiny<Sender>,
+            senders: Deque<Sender>,
             receiver: Receiver?
         )
 
@@ -112,6 +112,31 @@ extension Async.Channel.Bounded.State {
         let id = nextId
         nextId &+= 1
         return id
+    }
+}
+
+// MARK: - Sender Queue Helpers
+
+extension Async.Channel.Bounded.State {
+    /// Pops the next non-cancelled sender from the deque.
+    ///
+    /// Cancelled senders are skipped and their continuations resumed via the closure.
+    /// The cancellation marker is consumed from `cancelledSenders` on skip.
+    ///
+    /// - Invariant: Each sender id is unique and appears at most once in the deque.
+    @usableFromInline
+    mutating func popNextSender(
+        from senders: inout Deque<Sender>,
+        resumeCancelled: (Send.Continuation) -> Void
+    ) -> Sender? {
+        while let sender = senders.take.front {
+            if cancelledSenders.remove(sender.id) != nil {
+                resumeCancelled(sender.continuation)
+                continue
+            }
+            return sender
+        }
+        return nil
     }
 }
 
@@ -211,7 +236,7 @@ extension Async.Channel.Bounded.State {
 
             // Enqueue waiter
             phase = .modifying
-            senders.append(Sender(id: id, element: element, continuation: continuation))
+            senders.push.back(Sender(id: id, element: element, continuation: continuation))
             phase = .open(buffer: buffer, senders: senders, receiver: nil)
             return .suspend(id: id)
 
@@ -224,26 +249,19 @@ extension Async.Channel.Bounded.State {
     }
 
     /// Handle sender cancellation.
+    ///
+    /// With lazy skip, cancellation is marked but not acted upon immediately.
+    /// The cancelled sender's continuation will be resumed when popped via `popNextSender`.
     @usableFromInline
     mutating func sendCancelled(id: UInt64) -> Send.Cancel {
         switch phase {
-        case .open(let buffer, var senders, let receiver):
-            // Try to remove the sender
-            if let sender = senders.removeFirst(where: { $0.id == id }) {
-                phase = .open(buffer: buffer, senders: senders, receiver: receiver)
-                return .resumeWithCancellation(sender.continuation)
-            }
-            // Sender not found - mark as cancelled for when it arrives
+        case .open, .modifying:
+            // Mark as cancelled - will be handled lazily on pop
             cancelledSenders.insert(id)
-            phase = .open(buffer: buffer, senders: senders, receiver: receiver)
             return .none
 
         case .closed, .finished:
-            return .none
-
-        case .modifying:
-            // Cancellation during modification - mark for later
-            cancelledSenders.insert(id)
+            // Channel is closed/finished - no senders can be waiting, don't accumulate
             return .none
         }
     }
@@ -262,7 +280,13 @@ extension Async.Channel.Bounded.State {
         @usableFromInline
         enum Action: Sendable {
             /// Return the element immediately.
-            case returnElement(Element, resumeSender: Send.Continuation?)
+            /// `resumeSender`: continuation of the sender that provided this element.
+            /// `cancelled`: continuations of cancelled senders skipped during pop.
+            case returnElement(
+                Element,
+                resumeSender: Send.Continuation?,
+                cancelled: Deque<Send.Continuation>
+            )
 
             /// Receiver must suspend and wait.
             case suspend
@@ -288,26 +312,31 @@ extension Async.Channel.Bounded.State {
         case .open(var buffer, var senders, let receiver):
             precondition(receiver == nil, "Single-consumer invariant violated")
 
+            // Collect cancelled continuations during pop
+            var cancelled = Deque<Send.Continuation>()
+            let collectCancelled: (Send.Continuation) -> Void = { cancelled.push.back($0) }
+
             // If buffer has elements
             if let element = buffer.take.front {
-                // Wake up a waiting sender if any
-                if let sender = senders.removeFirst() {
+                // Wake up a waiting sender if any (skipping cancelled)
+                if let sender = popNextSender(from: &senders, resumeCancelled: collectCancelled) {
                     phase = .modifying
                     buffer.push.back(sender.element)
                     phase = .open(buffer: buffer, senders: senders, receiver: nil)
-                    return .returnElement(element, resumeSender: sender.continuation)
+                    return .returnElement(element, resumeSender: sender.continuation, cancelled: cancelled)
                 }
                 phase = .open(buffer: buffer, senders: senders, receiver: nil)
-                return .returnElement(element, resumeSender: nil)
+                return .returnElement(element, resumeSender: nil, cancelled: cancelled)
             }
 
-            // If there are waiting senders, take directly from them
-            if let sender = senders.removeFirst() {
+            // If there are waiting senders, take directly from them (skipping cancelled)
+            if let sender = popNextSender(from: &senders, resumeCancelled: collectCancelled) {
                 phase = .open(buffer: buffer, senders: senders, receiver: nil)
-                return .returnElement(sender.element, resumeSender: sender.continuation)
+                return .returnElement(sender.element, resumeSender: sender.continuation, cancelled: cancelled)
             }
 
             // Nothing available, would need to suspend
+            phase = .open(buffer: buffer, senders: senders, receiver: nil)
             return .suspend
 
         case .closed(var buffer):
@@ -317,7 +346,7 @@ extension Async.Channel.Bounded.State {
                 } else {
                     phase = .closed(buffer: buffer)
                 }
-                return .returnElement(element, resumeSender: nil)
+                return .returnElement(element, resumeSender: nil, cancelled: Deque())
             }
             phase = .finished
             return .returnNil
@@ -345,21 +374,25 @@ extension Async.Channel.Bounded.State {
         case .open(var buffer, var senders, let receiver):
             precondition(receiver == nil, "Single-consumer invariant violated")
 
+            // Collect cancelled continuations during pop
+            var cancelled = Deque<Send.Continuation>()
+            let collectCancelled: (Send.Continuation) -> Void = { cancelled.push.back($0) }
+
             // Double-check: element might be available
             if let element = buffer.take.front {
-                if let sender = senders.removeFirst() {
+                if let sender = popNextSender(from: &senders, resumeCancelled: collectCancelled) {
                     phase = .modifying
                     buffer.push.back(sender.element)
                     phase = .open(buffer: buffer, senders: senders, receiver: nil)
-                    return .returnElement(element, resumeSender: sender.continuation)
+                    return .returnElement(element, resumeSender: sender.continuation, cancelled: cancelled)
                 }
                 phase = .open(buffer: buffer, senders: senders, receiver: nil)
-                return .returnElement(element, resumeSender: nil)
+                return .returnElement(element, resumeSender: nil, cancelled: cancelled)
             }
 
-            if let sender = senders.removeFirst() {
+            if let sender = popNextSender(from: &senders, resumeCancelled: collectCancelled) {
                 phase = .open(buffer: buffer, senders: senders, receiver: nil)
-                return .returnElement(sender.element, resumeSender: sender.continuation)
+                return .returnElement(sender.element, resumeSender: sender.continuation, cancelled: cancelled)
             }
 
             // Store receiver
@@ -377,7 +410,7 @@ extension Async.Channel.Bounded.State {
                 } else {
                     phase = .closed(buffer: buffer)
                 }
-                return .returnElement(element, resumeSender: nil)
+                return .returnElement(element, resumeSender: nil, cancelled: Deque())
             }
             phase = .finished
             return .returnNil
@@ -421,12 +454,12 @@ extension Async.Channel.Bounded.State {
         @usableFromInline
         let receiverToResume: Receive.Continuation?
         @usableFromInline
-        let sendersToCancel: [Send.Continuation]
+        var sendersToCancel: Deque<Send.Continuation>
 
         @usableFromInline
         init(
             receiverToResume: Receive.Continuation?,
-            sendersToCancel: [Send.Continuation]
+            sendersToCancel: Deque<Send.Continuation>
         ) {
             self.receiverToResume = receiverToResume
             self.sendersToCancel = sendersToCancel
@@ -437,10 +470,10 @@ extension Async.Channel.Bounded.State {
     mutating func close() -> Close {
         switch phase {
         case .open(let buffer, var senders, let receiver):
-            // Collect senders to cancel
-            var sendersToCancel: [Send.Continuation] = []
-            senders.drain { sender in
-                sendersToCancel.append(sender.continuation)
+            // Collect senders to cancel (drain the deque)
+            var sendersToCancel = Deque<Send.Continuation>()
+            while let sender = senders.take.front {
+                sendersToCancel.push.back(sender.continuation)
             }
 
             // If buffer is empty and receiver is waiting, resume with nil
@@ -459,7 +492,7 @@ extension Async.Channel.Bounded.State {
             return Close(receiverToResume: nil, sendersToCancel: sendersToCancel)
 
         case .closed, .finished:
-            return Close(receiverToResume: nil, sendersToCancel: [])
+            return Close(receiverToResume: nil, sendersToCancel: Deque())
 
         case .modifying:
             preconditionFailure("Invalid state: modifying")
