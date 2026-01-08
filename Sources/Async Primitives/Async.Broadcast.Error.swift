@@ -9,12 +9,12 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Async {
-    /// Namespace for channel primitives.
-    ///
-    /// Channels provide structured communication between concurrent tasks.
-    /// Available channel types:
-    /// - `Unbounded`: Unlimited buffer, sync send, async receive
-    /// - `Bounded`: Capacity-limited buffer with backpressure
-    public enum Channel {}
+extension Async.Broadcast {
+    /// Errors that can occur in broadcast operations.
+    public enum Error: Swift.Error, Sendable, Equatable {
+        /// The operation was cancelled.
+        ///
+        /// Thrown by `next()` when the task is cancelled while waiting.
+        case cancelled
+    }
 }

@@ -1,8 +1,8 @@
 // ===----------------------------------------------------------------------===//
 //
-// This source file is part of the swift-runtime open source project
+// This source file is part of the swift-async open source project
 //
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-runtime project authors
+// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE for license information
@@ -16,19 +16,18 @@ import Testing
 struct UnboundedChannelTests {
 
     @Test("Send and receive single element")
-    func sendReceiveSingleElement() async {
+    func sendReceiveSingleElement() async throws {
         let channel = Async.Channel.Unbounded<Int>()
-        channel.send(42)
+        try channel.send(42)
         channel.close()
-        let value = await channel.receive()
+        let value = try await channel.receive()
         #expect(value == 42)
     }
 
-    @Test("Send returns true when channel is open")
-    func sendReturnsTrue() {
+    @Test("Send succeeds when channel is open")
+    func sendSucceedsWhenOpen() throws {
         let channel = Async.Channel.Unbounded<Int>()
-        let result = channel.send(42)
-        #expect(result == true)
+        try channel.send(42)
         channel.close()
     }
 
@@ -36,20 +35,21 @@ struct UnboundedChannelTests {
     func closedChannelRejectsSend() {
         let channel = Async.Channel.Unbounded<Int>()
         channel.close()
-        let result = channel.send(42)
-        #expect(result == false)
+        #expect(throws: Async.Channel.Unbounded<Int>.Error.closed) {
+            try channel.send(42)
+        }
     }
 
     @Test("Receive returns nil after close and drain")
-    func receiveReturnsNilAfterCloseAndDrain() async {
+    func receiveReturnsNilAfterCloseAndDrain() async throws {
         let channel = Async.Channel.Unbounded<Int>()
-        channel.send(1)
-        channel.send(2)
+        try channel.send(1)
+        try channel.send(2)
         channel.close()
 
-        let first = await channel.receive()
-        let second = await channel.receive()
-        let third = await channel.receive()
+        let first = try await channel.receive()
+        let second = try await channel.receive()
+        let third = try await channel.receive()
 
         #expect(first == 1)
         #expect(second == 2)
@@ -64,22 +64,21 @@ struct UnboundedChannelTests {
     }
 
     @Test("Try receive returns element when available")
-    func tryReceiveReturnsElement() {
+    func tryReceiveReturnsElement() throws {
         let channel = Async.Channel.Unbounded<Int>()
-        channel.send(42)
+        try channel.send(42)
         let result = channel.receive.tryOne()
         #expect(result == 42)
     }
 
     @Test("Send batch elements")
-    func sendBatch() async {
+    func sendBatch() async throws {
         let channel = Async.Channel.Unbounded<Int>()
-        let result = channel.send(contentsOf: [1, 2, 3])
-        #expect(result == true)
+        try channel.send(contentsOf: [1, 2, 3])
         channel.close()
 
         var received: [Int] = []
-        while let value = await channel.receive() {
+        while let value = try await channel.receive() {
             received.append(value)
         }
         #expect(received == [1, 2, 3])
@@ -94,32 +93,32 @@ struct UnboundedChannelTests {
     }
 
     @Test("Receive suspends until element available")
-    func receiveSuspendsUntilElement() async {
+    func receiveSuspendsUntilElement() async throws {
         let channel = Async.Channel.Unbounded<Int>()
 
         // Start receive in background
         let receiveTask = Task {
-            await channel.receive()
+            try await channel.receive()
         }
 
         // Give task time to start waiting
         try? await Task.sleep(for: .milliseconds(10))
 
         // Send element
-        channel.send(42)
+        try channel.send(42)
 
         // Receive should complete with the element
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == 42)
     }
 
     @Test("Receive resumes with nil on close")
-    func receiveResumesOnClose() async {
+    func receiveResumesOnClose() async throws {
         let channel = Async.Channel.Unbounded<Int>()
 
         // Start receive in background
         let receiveTask = Task {
-            await channel.receive()
+            try await channel.receive()
         }
 
         // Give task time to start waiting
@@ -129,20 +128,20 @@ struct UnboundedChannelTests {
         channel.close()
 
         // Receive should complete with nil
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == nil)
     }
 
     @Test("Multiple producers can send concurrently")
-    func multipleProducers() async {
+    func multipleProducers() async throws {
         let channel = Async.Channel.Unbounded<Int>()
         let count = 100
 
         // Launch multiple producer tasks
-        await withTaskGroup(of: Void.self) { group in
+        await withThrowingTaskGroup(of: Void.self) { group in
             for i in 0..<count {
                 group.addTask {
-                    channel.send(i)
+                    try channel.send(i)
                 }
             }
         }
@@ -151,7 +150,7 @@ struct UnboundedChannelTests {
 
         // Collect all received values
         var received: Set<Int> = []
-        while let value = await channel.receive() {
+        while let value = try await channel.receive() {
             received.insert(value)
         }
 
@@ -159,6 +158,31 @@ struct UnboundedChannelTests {
         #expect(received.count == count)
         for i in 0..<count {
             #expect(received.contains(i))
+        }
+    }
+
+    @Test("Cancellation throws cancelled error")
+    func cancellationThrowsCancelled() async {
+        let channel = Async.Channel.Unbounded<Int>()
+
+        let receiveTask = Task {
+            try await channel.receive()
+        }
+
+        // Give task time to start waiting
+        try? await Task.sleep(for: .milliseconds(10))
+
+        // Cancel the task
+        receiveTask.cancel()
+
+        // Should throw cancelled error
+        do {
+            _ = try await receiveTask.value
+            Issue.record("Expected cancellation error")
+        } catch let error as Async.Channel.Unbounded<Int>.Error {
+            #expect(error == .cancelled)
+        } catch {
+            Issue.record("Unexpected error type: \(error)")
         }
     }
 }

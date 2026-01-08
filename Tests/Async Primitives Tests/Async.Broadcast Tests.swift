@@ -1,8 +1,8 @@
 // ===----------------------------------------------------------------------===//
 //
-// This source file is part of the swift-runtime open source project
+// This source file is part of the swift-async open source project
 //
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-runtime project authors
+// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE for license information
@@ -16,7 +16,7 @@ import Testing
 struct BroadcastTests {
 
     @Test("Single subscriber receives all elements")
-    func singleSubscriberReceivesAll() async {
+    func singleSubscriberReceivesAll() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
@@ -26,7 +26,7 @@ struct BroadcastTests {
         broadcast.finish()
 
         var received: [Int] = []
-        for await value in subscription {
+        for try await value in subscription {
             received.append(value)
         }
 
@@ -34,7 +34,7 @@ struct BroadcastTests {
     }
 
     @Test("Multiple subscribers each receive all elements")
-    func multipleSubscribersReceiveAll() async {
+    func multipleSubscribersReceiveAll() async throws {
         let broadcast = Async.Broadcast<Int>()
         let sub1 = broadcast.subscribe()
         let sub2 = broadcast.subscribe()
@@ -45,7 +45,7 @@ struct BroadcastTests {
 
         let task1 = Task {
             var received: [Int] = []
-            for await value in sub1 {
+            for try await value in sub1 {
                 received.append(value)
             }
             return received
@@ -53,21 +53,21 @@ struct BroadcastTests {
 
         let task2 = Task {
             var received: [Int] = []
-            for await value in sub2 {
+            for try await value in sub2 {
                 received.append(value)
             }
             return received
         }
 
-        let result1 = await task1.value
-        let result2 = await task2.value
+        let result1 = try await task1.value
+        let result2 = try await task2.value
 
         #expect(result1 == [1, 2])
         #expect(result2 == [1, 2])
     }
 
     @Test("Late subscriber only sees new elements")
-    func lateSubscriberOnlySeesNew() async {
+    func lateSubscriberOnlySeesNew() async throws {
         let broadcast = Async.Broadcast<Int>()
 
         broadcast.send(1)
@@ -79,7 +79,7 @@ struct BroadcastTests {
         broadcast.finish()
 
         var received: [Int] = []
-        for await value in subscription {
+        for try await value in subscription {
             received.append(value)
         }
 
@@ -95,14 +95,14 @@ struct BroadcastTests {
     }
 
     @Test("Subscriber suspends until element available")
-    func subscriberSuspendsUntilElement() async {
+    func subscriberSuspendsUntilElement() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
         // Start receive in background
         let receiveTask = Task { () -> Int? in
             var iterator = subscription.makeAsyncIterator()
-            return await iterator.next()
+            return try await iterator.next()
         }
 
         // Give task time to start waiting
@@ -112,19 +112,19 @@ struct BroadcastTests {
         broadcast.send(42)
 
         // Receive should complete with the element
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == 42)
     }
 
     @Test("Subscriber resumes with nil on finish")
-    func subscriberResumesOnFinish() async {
+    func subscriberResumesOnFinish() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
         // Start receive in background
         let receiveTask = Task { () -> Int? in
             var iterator = subscription.makeAsyncIterator()
-            return await iterator.next()
+            return try await iterator.next()
         }
 
         // Give task time to start waiting
@@ -134,19 +134,19 @@ struct BroadcastTests {
         broadcast.finish()
 
         // Receive should complete with nil
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == nil)
     }
 
     @Test("Cancel subscription stops iteration")
-    func cancelSubscriptionStopsIteration() async {
+    func cancelSubscriptionStopsIteration() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
         // Start receive in background
         let receiveTask = Task { () -> Int? in
             var iterator = subscription.makeAsyncIterator()
-            return await iterator.next()
+            return try await iterator.next()
         }
 
         // Give task time to start waiting
@@ -156,12 +156,12 @@ struct BroadcastTests {
         subscription.cancel()
 
         // Receive should complete with nil
-        let result = await receiveTask.value
+        let result = try await receiveTask.value
         #expect(result == nil)
     }
 
     @Test("Elements delivered in order")
-    func elementsDeliveredInOrder() async {
+    func elementsDeliveredInOrder() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
@@ -171,7 +171,7 @@ struct BroadcastTests {
         broadcast.finish()
 
         var received: [Int] = []
-        for await value in subscription {
+        for try await value in subscription {
             received.append(value)
         }
 
@@ -179,7 +179,7 @@ struct BroadcastTests {
     }
 
     @Test("Send after finish is ignored")
-    func sendAfterFinishIgnored() async {
+    func sendAfterFinishIgnored() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
@@ -188,10 +188,37 @@ struct BroadcastTests {
         broadcast.send(2)  // Should be ignored
 
         var received: [Int] = []
-        for await value in subscription {
+        for try await value in subscription {
             received.append(value)
         }
 
         #expect(received == [1])
+    }
+
+    @Test("Task cancellation throws cancelled error")
+    func taskCancellationThrowsCancelled() async {
+        let broadcast = Async.Broadcast<Int>()
+        let subscription = broadcast.subscribe()
+
+        let receiveTask = Task {
+            var iterator = subscription.makeAsyncIterator()
+            return try await iterator.next()
+        }
+
+        // Give task time to start waiting
+        try? await Task.sleep(for: .milliseconds(10))
+
+        // Cancel the task
+        receiveTask.cancel()
+
+        // Should throw cancelled error
+        do {
+            _ = try await receiveTask.value
+            Issue.record("Expected cancellation error")
+        } catch let error as Async.Broadcast<Int>.Error {
+            #expect(error == .cancelled)
+        } catch {
+            Issue.record("Unexpected error type: \(error)")
+        }
     }
 }

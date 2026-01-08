@@ -9,19 +9,19 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Async_Primitives
-
-extension Async.Stream {
-    /// Namespace for debounce operations.
-    public enum Debounce {}
+extension Async.Broadcast {
+    /// Namespace for next operation types.
+    public enum Next {}
 }
 
-extension Async.Stream.Debounce {
-    /// Events used internally by debounce state.
-    @usableFromInline
-    enum Event: Sendable {
+extension Async.Broadcast.Next {
+    /// Outcome of a next() operation.
+    enum Outcome {
+        /// An element was received.
         case element(Element)
-        case timerExpired
-        case upstreamComplete
+        /// The broadcast is finished and no more elements are available.
+        case finished
+        /// The operation was cancelled.
+        case cancelled
     }
 }

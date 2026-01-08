@@ -1,8 +1,8 @@
 // ===----------------------------------------------------------------------===//
 //
-// This source file is part of the swift-runtime open source project
+// This source file is part of the swift-async open source project
 //
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-runtime project authors
+// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE for license information
@@ -61,10 +61,15 @@ extension Async.Stream {
     ///
     /// - Parameter channel: The channel to receive from.
     /// - Returns: A stream that emits channel elements.
+    /// - Note: Cancellation errors from receive are treated as stream termination.
     public init(from channel: Async.Channel.Unbounded<Element>) {
         self.init {
             Iterator {
-                await channel.receive()
+                do throws(Async.Channel.Unbounded<Element>.Error) {
+                    return try await channel.receive()
+                } catch {
+                    return nil
+                }
             }
         }
     }
@@ -86,7 +91,11 @@ extension Async.Stream {
     public init(from channel: Async.Channel.Bounded<Element>) {
         self.init {
             Iterator {
-                try? await channel.receive()
+                do throws(Async.Channel.Error) {
+                    return try await channel.receive()
+                } catch {
+                    return nil
+                }
             }
         }
     }
@@ -105,11 +114,16 @@ extension Async.Stream {
     ///
     /// - Parameter channel: The channel to send to.
     /// - Returns: A task that forwards elements.
+    /// - Note: Stops forwarding if the channel is closed.
     @discardableResult
     public func forward(to channel: Async.Channel.Unbounded<Element>) -> Task<Void, Never> {
         Task {
-            for await element in self {
-                _ = channel.send(element)
+            forwarding: for await element in self {
+                do throws(Async.Channel.Unbounded<Element>.Error) {
+                    try channel.send(element)
+                } catch {
+                    break forwarding
+                }
             }
             channel.close()
         }

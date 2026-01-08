@@ -1,8 +1,8 @@
 // ===----------------------------------------------------------------------===//
 //
-// This source file is part of the swift-runtime open source project
+// This source file is part of the swift-async open source project
 //
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-runtime project authors
+// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE for license information

@@ -9,12 +9,15 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Async {
-    /// Namespace for channel primitives.
+extension Async.Channel.Unbounded {
+    /// A waiting receiver in the FIFO queue.
     ///
-    /// Channels provide structured communication between concurrent tasks.
-    /// Available channel types:
-    /// - `Unbounded`: Unlimited buffer, sync send, async receive
-    /// - `Bounded`: Capacity-limited buffer with backpressure
-    public enum Channel {}
+    /// Each receiver has a unique ID for identification during cancellation.
+    struct Receiver {
+        /// Unique identifier for this receiver.
+        let id: UInt64
+
+        /// The continuation to resume when an element is available.
+        let continuation: CheckedContinuation<Receive.Outcome, Never>
+    }
 }
