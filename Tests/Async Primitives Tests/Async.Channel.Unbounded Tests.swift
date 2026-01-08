@@ -95,14 +95,16 @@ struct UnboundedChannelTests {
     @Test("Receive suspends until element available")
     func receiveSuspendsUntilElement() async throws {
         let channel = Async.Channel.Unbounded<Int>()
+        let started = Async.Barrier(parties: 2)
 
         // Start receive in background
         let receiveTask = Task {
-            try await channel.receive()
+            await started.arrive()  // Signal ready
+            return try await channel.receive()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Send element
         try channel.send(42)
@@ -115,14 +117,16 @@ struct UnboundedChannelTests {
     @Test("Receive resumes with nil on close")
     func receiveResumesOnClose() async throws {
         let channel = Async.Channel.Unbounded<Int>()
+        let started = Async.Barrier(parties: 2)
 
         // Start receive in background
         let receiveTask = Task {
-            try await channel.receive()
+            await started.arrive()  // Signal ready
+            return try await channel.receive()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Close channel
         channel.close()
@@ -164,13 +168,15 @@ struct UnboundedChannelTests {
     @Test("Cancellation throws cancelled error")
     func cancellationThrowsCancelled() async {
         let channel = Async.Channel.Unbounded<Int>()
+        let started = Async.Barrier(parties: 2)
 
         let receiveTask = Task {
-            try await channel.receive()
+            await started.arrive()  // Signal ready
+            return try await channel.receive()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Cancel the task
         receiveTask.cancel()

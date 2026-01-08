@@ -98,15 +98,17 @@ struct BroadcastTests {
     func subscriberSuspendsUntilElement() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
+        let started = Async.Barrier(parties: 2)
 
         // Start receive in background
         let receiveTask = Task { () -> Int? in
+            await started.arrive()  // Signal ready
             var iterator = subscription.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Send element
         broadcast.send(42)
@@ -120,15 +122,17 @@ struct BroadcastTests {
     func subscriberResumesOnFinish() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
+        let started = Async.Barrier(parties: 2)
 
         // Start receive in background
         let receiveTask = Task { () -> Int? in
+            await started.arrive()  // Signal ready
             var iterator = subscription.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Finish broadcast
         broadcast.finish()
@@ -142,15 +146,17 @@ struct BroadcastTests {
     func cancelSubscriptionStopsIteration() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
+        let started = Async.Barrier(parties: 2)
 
         // Start receive in background
         let receiveTask = Task { () -> Int? in
+            await started.arrive()  // Signal ready
             var iterator = subscription.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Cancel subscription
         subscription.cancel()
@@ -199,14 +205,16 @@ struct BroadcastTests {
     func taskCancellationThrowsCancelled() async {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
+        let started = Async.Barrier(parties: 2)
 
         let receiveTask = Task {
+            await started.arrive()  // Signal ready
             var iterator = subscription.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Give task time to start waiting
-        try? await Task.sleep(for: .milliseconds(10))
+        // Wait for task to be ready
+        await started.arrive()
 
         // Cancel the task
         receiveTask.cancel()
