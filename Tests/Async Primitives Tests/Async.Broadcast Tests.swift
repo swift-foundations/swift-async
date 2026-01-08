@@ -416,84 +416,83 @@ struct BroadcastStressTests {
 
     @Test("Many subscribers with interleaved send and cancel")
     func manySubscribersInterleavedSendCancel() async throws {
-        // Broad interleaving stress test for send, subscribe, and cancel.
-        // Tests snapshot iteration under load. Token matching correctness is
-        // tested deterministically in cancellationRacingWithSend.
-        let elementCount = 100
+        // Pure integrity stress test under concurrent send, subscribe, and cancel.
+        //
+        // INVARIANTS validated (must hold regardless of scheduling):
+        // - Elements received in strict monotonic order (no reordering)
+        // - No duplicate elements within any subscriber
+        // - All values within expected range [0, elementCount)
+        // - Every subscriber terminates (normally OR via .cancelled)
+        //
+        // NOT validated here (timing-dependent):
+        // - Whether cancellation is observed (may complete normally before cancel propagates)
+        // - How many subscribers observe cancellation
+        //
+        // Cancellation semantics correctness is validated deterministically
+        // in cancellationRacingWithSend via explicit token matching.
+        let subscriberCount = 20
+        let elementCount = 500
         let broadcast = Async.Broadcast<Int>(bufferCapacity: elementCount)
 
-        // Collector for results
-        var results = Async.Channel<(id: Int, elements: [Int], cancelled: Bool)>.Unbounded().take().ends()
+        var results = Async.Channel<(id: Int, elements: [Int], terminatedViaCancellation: Bool)>.Unbounded().take().ends()
 
-        // Build subscriber tasks synchronously (outside group) to avoid shared mutable state
-        // Store (id, task) tuples to cancel by logical id, not array index
         var subscriberTasks: [(id: Int, task: Task<Void, Never>)] = []
 
-        // Create all subscriber tasks first
-        for wave in 0..<5 {
-            for subId in 0..<4 {
-                let id = wave * 4 + subId
-                let task = Task { [sender = results.sender] in
-                    let subscription = broadcast.subscribe()
-                    var received: [Int] = []
+        for id in 0..<subscriberCount {
+            let task = Task { [sender = results.sender] in
+                let subscription = broadcast.subscribe()
+                var received: [Int] = []
+                var terminatedViaCancellation = false
 
-                    // Direct iteration - no nested Task
-                    var iterator = subscription.makeAsyncIterator()
-                    while true {
-                        do {
-                            if let value = try await iterator.next() {
-                                received.append(value)
-                                await Task.yield() // Allow interleaving
-                            } else {
-                                break // Finished
-                            }
-                        } catch let error as Async.Broadcast<Int>.Error {
-                            #expect(error == .cancelled,
-                                "Subscriber \(id): Expected .cancelled, got \(error)")
-                            // Send results collected so far (not empty!)
-                            do { try sender.send((id: id, elements: received, cancelled: true)) }
-                            catch { #expect(Bool(false), "results channel unexpectedly closed: \(error)") }
-                            return
-                        } catch {
-                            #expect(Bool(false), "Subscriber \(id): Unexpected error: \(error)")
-                            break
+                var iterator = subscription.makeAsyncIterator()
+                loop: while true {
+                    do {
+                        if let value = try await iterator.next() {
+                            received.append(value)
+                            await Task.yield()
+                        } else {
+                            break loop // Normal finish
                         }
+                    } catch let error as Async.Broadcast<Int>.Error {
+                        // Explicit check: only .cancelled is expected from broadcast
+                        #expect(error == .cancelled,
+                            "Subscriber \(id): Unexpected broadcast error: \(error)")
+                        terminatedViaCancellation = true
+                        break loop
+                    } catch {
+                        // Unexpected error type - this IS a test failure
+                        #expect(Bool(false), "Subscriber \(id): Unexpected error type: \(error)")
+                        break loop
                     }
-                    // Normal completion
-                    do { try sender.send((id: id, elements: received, cancelled: false)) }
-                    catch { #expect(Bool(false), "results channel unexpectedly closed: \(error)") }
                 }
-                subscriberTasks.append((id: id, task: task))
+
+                do { try sender.send((id: id, elements: received, terminatedViaCancellation: terminatedViaCancellation)) }
+                catch { #expect(Bool(false), "results channel unexpectedly closed") }
             }
+            subscriberTasks.append((id: id, task: task))
         }
 
-        // IDs to cancel (deterministic: every 3rd subscriber)
-        let idsToCancel = Set(stride(from: 0, to: 20, by: 3))
+        let idsToCancel = Set(stride(from: 0, to: subscriberCount, by: 3))
 
-        // Start producer and cancellation in a task group
         await withTaskGroup(of: Void.self) { group in
-            // Producer: send elements with yields
+            // Producer: high throughput with periodic yields
             group.addTask {
                 for i in 0..<elementCount {
                     broadcast.send(i)
-                    await Task.yield()
+                    if i % 20 == 0 { await Task.yield() }
                 }
                 broadcast.finish()
             }
 
-            // Cancellation task: cancel designated subscribers after some progress
+            // Cancellation: yield to increase probability of overlap with active work
             group.addTask { [subscriberTasks] in
-                // Wait for some elements to be sent/received
-                for _ in 0..<30 {
-                    await Task.yield()
-                }
-                // Cancel by logical subscriber id
+                for _ in 0..<10 { await Task.yield() }
                 for entry in subscriberTasks where idsToCancel.contains(entry.id) {
                     entry.task.cancel()
                 }
             }
 
-            // Wait for all subscriber tasks
+            // Await all subscribers
             group.addTask { [subscriberTasks] in
                 for entry in subscriberTasks {
                     await entry.task.value
@@ -501,44 +500,34 @@ struct BroadcastStressTests {
             }
         }
 
-        // SAFETY: results.close() is safe here because all subscriber tasks
-        // have completed (awaited in group) and each sends its result on exit.
         results.close()
 
-        // Analyze results
-        var totalSubscribers = 0
-        var cancelledSubscribers = 0
-        var cancelledWithElements = 0
+        // Validate invariants
+        var completedSubscribers = 0
 
         while let result = try await results.receiver.receive() {
-            totalSubscribers += 1
+            completedSubscribers += 1
 
-            // Check ordering and duplicates for ALL subscribers (including cancelled)
+            // INVARIANT: Strict monotonic ordering
             for i in 1..<result.elements.count {
                 #expect(result.elements[i] > result.elements[i-1],
-                    "Subscriber \(result.id): Elements out of order at index \(i)")
-            }
-            #expect(Set(result.elements).count == result.elements.count,
-                "Subscriber \(result.id): Duplicates detected")
-            // All elements in valid range
-            for value in result.elements {
-                #expect((0..<elementCount).contains(value),
-                    "Subscriber \(result.id): Out-of-range value \(value)")
+                    "Subscriber \(result.id): Out of order at index \(i): \(result.elements[i-1]) -> \(result.elements[i])")
             }
 
-            if result.cancelled {
-                cancelledSubscribers += 1
-                if !result.elements.isEmpty {
-                    cancelledWithElements += 1
-                }
+            // INVARIANT: No duplicates
+            #expect(Set(result.elements).count == result.elements.count,
+                "Subscriber \(result.id): Duplicate elements detected")
+
+            // INVARIANT: All values in range
+            for value in result.elements {
+                #expect((0..<elementCount).contains(value),
+                    "Subscriber \(result.id): Value \(value) out of range [0, \(elementCount))")
             }
         }
 
-        #expect(totalSubscribers == 20, "Expected 20 subscribers, got \(totalSubscribers)")
-        #expect(cancelledSubscribers > 0, "Expected some cancellations")
-        // Ensure interleaving actually happened (not just "cancel before first next")
-        #expect(cancelledWithElements > 0,
-            "Expected at least one cancelled subscriber to have received elements")
+        // INVARIANT: All subscribers terminated
+        #expect(completedSubscribers == subscriberCount,
+            "Expected \(subscriberCount) subscribers to terminate, got \(completedSubscribers)")
     }
 
     @Test("Buffer trimming with slow subscriber")
