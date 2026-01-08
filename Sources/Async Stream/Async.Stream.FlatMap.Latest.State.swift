@@ -92,7 +92,7 @@ extension Async.Stream.FlatMap.Latest.State {
     }
 
     @usableFromInline
-    func receiveInner(_ element: U) {
+    func receiveInner(_ element: U) async {
         if let cont = continuation {
             continuation = nil
             cont.resume(returning: element)
@@ -102,7 +102,7 @@ extension Async.Stream.FlatMap.Latest.State {
     }
 
     @usableFromInline
-    func markInnerDone() {
+    func markInnerDone() async {
         innerDone = true
         if let cont = continuation {
             continuation = nil

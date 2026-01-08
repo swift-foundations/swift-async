@@ -55,12 +55,12 @@ extension Async.Stream.Sample.State {
     }
 
     @usableFromInline
-    func updateLatest(_ element: Element) {
+    func updateLatest(_ element: Element) async {
         latest = element
     }
 
     @usableFromInline
-    func markSourceDone() {
+    func markSourceDone() async {
         sourceDone = true
     }
 

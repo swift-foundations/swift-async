@@ -51,7 +51,7 @@ extension Async.Stream.WithLatestFrom.State {
     }
 
     @usableFromInline
-    func updateLatestOther(_ element: Other) {
+    func updateLatestOther(_ element: Other) async {
         latestOther = element
     }
 
