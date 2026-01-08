@@ -148,7 +148,7 @@ extension Async.Channel.Bounded.State {
         /// Continuation type for send operations.
         /// Returns nil on success, Error on failure.
         @usableFromInline
-        typealias Continuation = UnsafeContinuation<Async.Channel.Error?, Never>
+        typealias Continuation = UnsafeContinuation<Async.Channel<Element>.Error?, Never>
 
         @usableFromInline
         enum Action: Sendable {
@@ -275,7 +275,7 @@ extension Async.Channel.Bounded.State {
         /// Continuation type for receive operations.
         /// Returns (element, nil) on success, (nil, nil) on closed, (nil, error) on failure.
         @usableFromInline
-        typealias Continuation = UnsafeContinuation<(Element?, Async.Channel.Error?), Never>
+        typealias Continuation = UnsafeContinuation<(Element?, Async.Channel<Element>.Error?), Never>
 
         @usableFromInline
         enum Action: Sendable {
@@ -515,3 +515,4 @@ extension Async.Channel.Bounded.State {
         }
     }
 }
+

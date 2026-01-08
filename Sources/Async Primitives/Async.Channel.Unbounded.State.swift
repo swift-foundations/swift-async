@@ -9,144 +9,196 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import StandardsCollections
+public import StandardsCollections
 
 extension Async.Channel.Unbounded {
-    /// Internal state for the unbounded channel.
+    /// Pure state machine for unbounded channel operations.
     ///
-    /// Manages the element buffer, waiter queue, and lifecycle flags.
-    /// All mutations go through pump functions that return actions to execute outside the lock.
-    struct State {
+    /// This state machine contains no side effects. All operations return
+    /// `Action` values that describe what the caller should do.
+    ///
+    /// ## Single-Suspended-Receiver Invariant
+    /// At most one task may be suspended in `receive()` at a time.
+    /// Concurrent suspended receives trigger a precondition failure.
+    @usableFromInline
+    struct State: Sendable {
         /// Buffered elements waiting to be received.
-        var buffer: Deque<Element> = .init()
+        @usableFromInline
+        var buffer: Deque<Element>
 
-        /// FIFO queue of waiting receivers.
-        var receivers: Deque<Receiver> = .init()
+        @usableFromInline
+        var slot: Slot
 
-        /// Receiver ID allocation.
-        var receiver: ReceiverID = .init()
-
-        /// Lifecycle flags.
-        var `is`: Is = .init()
-    }
-}
-
-// MARK: - Nested Types
-
-extension Async.Channel.Unbounded {
-    /// Receiver ID state.
-    struct ReceiverID {
-        /// Seed for allocating unique receiver IDs.
-        var seed: UInt64 = 0
-    }
-
-    /// Lifecycle flags.
-    struct Is {
         /// Whether the channel has been closed.
-        var closed: Bool = false
+        @usableFromInline
+        var _closed: Bool
+
+        @usableFromInline
+        init() {
+            self.buffer = Deque()
+            self.slot = .none
+            self._closed = false
+        }
     }
 }
 
-// MARK: - Pump Functions
+// MARK: - Slot
 
 extension Async.Channel.Unbounded.State {
-    /// Single resumption funnel for send path.
-    ///
-    /// - Parameter element: The element to send.
-    /// - Returns: `(deliver, accepted)` where:
-    ///   - `deliver`: If non-nil, the receiver and outcome to resume with
-    ///   - `accepted`: Whether the element was accepted (false if closed)
-    ///
-    /// The funnel fully owns outcome selection. No cancelled reaping needed
-    /// because `pump(cancelling:)` eagerly removes cancelled waiters.
-    mutating func pump(
-        sending element: Element
-    ) -> (deliver: (receiver: Async.Channel.Unbounded<Element>.Receiver, outcome: Async.Channel.Unbounded<Element>.Receive.Outcome)?, accepted: Bool) {
-        guard !`is`.closed else { return (nil, false) }
+    @usableFromInline
+    enum Slot: Sendable {
+        case none
+        case wait(Receive.Continuation)
+    }
+}
 
-        // Pop first receiver (all receivers are non-cancelled - cancellation eagerly removes)
-        if let receiver = receivers.take.front {
-            // Found waiting receiver - pump owns outcome selection
-            return ((receiver, .element(element)), true)
+// MARK: - Query
+
+extension Async.Channel.Unbounded.State {
+    @usableFromInline
+    var closed: Bool { _closed }
+}
+
+// MARK: - Send
+
+extension Async.Channel.Unbounded.State {
+    @usableFromInline
+    enum Send {
+        @usableFromInline
+        enum Action: Sendable {
+            case give(Receive.Continuation, Element)
+            case keep
+            case shut
         }
-        // No waiting receiver, buffer the element
-        buffer.push.back(element)
-        return (nil, true)
     }
 
-    /// Single resumption funnel for close path.
+    /// Send an element to the channel.
     ///
-    /// - Returns: All receivers to resume with `.finished`.
-    ///
-    /// No cancelled tracking needed because `pump(cancelling:)` eagerly removes cancelled waiters.
-    mutating func pump(
-        closing: Void
-    ) -> [Async.Channel.Unbounded<Element>.Receiver] {
-        `is`.closed = true
-        var result: [Async.Channel.Unbounded<Element>.Receiver] = []
-        while let receiver = self.receivers.take.front {
-            result.append(receiver)
+    /// If a receiver is waiting, delivers directly to it.
+    /// Otherwise, buffers the element.
+    @usableFromInline
+    mutating func send(_ element: Element) -> Send.Action {
+        guard !_closed else { return .shut }
+
+        switch slot {
+        case .wait(let cont):
+            slot = .none
+            return .give(cont, element)
+        case .none:
+            buffer.push.back(element)
+            return .keep
         }
-        return result
+    }
+}
+
+// MARK: - Receive
+
+extension Async.Channel.Unbounded.State {
+    @usableFromInline
+    struct Receive {
+        
+        @usableFromInline
+        var base: Async.Channel<Element>.Unbounded.State
+
+        @usableFromInline
+        init(_ base: Async.Channel<Element>.Unbounded.State) {
+            self.base = base
+        }
+        
+        @usableFromInline
+        typealias Continuation = UnsafeContinuation<(Element?, Async.Channel<Element>.Error?), Never>
+
+        @usableFromInline
+        enum Step: Sendable {
+            case val(Element)
+            case end
+            case wait
+        }
+
+        @usableFromInline
+        enum Stop: Sendable {
+            case none
+            case stop(Continuation)
+        }
     }
 
-    /// Single resumption funnel for receive path.
-    ///
-    /// - Parameter continuation: The continuation to install if suspension is needed.
-    /// - Returns: `(immediate, id)` where:
-    ///   - `immediate`: If non-nil, the outcome to return immediately (no suspension)
-    ///   - `id`: If non-nil, the ID of the installed waiter (suspension installed)
-    ///
-    /// Outcome precedence:
-    /// 1. Element wins if present in buffer
-    /// 2. Finished wins if closed
-    /// 3. Otherwise install waiter
-    mutating func pump(
-        receiving continuation: CheckedContinuation<Async.Channel.Unbounded<Element>.Receive.Outcome, Never>
-    ) -> (immediate: Async.Channel.Unbounded<Element>.Receive.Outcome?, id: UInt64?) {
-        // Check buffer first - element wins
-        if let element = buffer.take.front {
-            return (.element(element), nil)
-        }
-        // Check closed - finished wins
-        if `is`.closed {
-            return (.finished, nil)
-        }
-        // Must suspend - allocate ID and install waiter
-        receiver.seed &+= 1
-        let id = receiver.seed
-        receivers.push.back(Async.Channel.Unbounded<Element>.Receiver(id: id, continuation: continuation))
-        return (nil, id)
+    @usableFromInline
+    var receive: Receive {
+        get { Receive(self) }
+        set { self = newValue.base }
+    }
+}
+
+extension Async.Channel.Unbounded.State.Receive {
+    @usableFromInline
+    mutating func poll() -> Element? {
+        base.buffer.take.front
     }
 
-    /// Single resumption funnel for cancellation path.
-    ///
-    /// Called from cancellation handler - removes specific waiter by ID.
-    /// Returns the cancelled receiver to resume (ensures progress for cancelled task).
-    ///
-    /// - Parameter id: The ID of the waiter to cancel.
-    /// - Returns: The removed receiver, or `nil` if not found.
-    ///
-    /// - Note: This rebuilds the deque to remove by ID (O(n)).
-    ///   Cancellation is rare; correctness beats micro-optimization for "timeless infra."
-    ///   Deque lacks `remove(at:)`, so we rebuild without the cancelled waiter.
-    mutating func pump(
-        cancelling id: UInt64
-    ) -> Async.Channel.Unbounded<Element>.Receiver? {
-        // Scan for the waiter with matching ID
-        // Rebuild deque without the cancelled waiter
-        var found: Async.Channel.Unbounded<Element>.Receiver? = nil
-        var remaining: Deque<Async.Channel.Unbounded<Element>.Receiver> = .init()
+    @usableFromInline
+    mutating func take() -> Async.Channel<Element>.Unbounded.State.Receive.Step {
+        if let element = base.buffer.take.front {
+            return .val(element)
+        }
+        if base._closed {
+            return .end
+        }
+        return .wait
+    }
 
-        while let receiver = receivers.take.front {
-            if receiver.id == id && found == nil {
-                found = receiver
-            } else {
-                remaining.push.back(receiver)
-            }
+    @usableFromInline
+    mutating func wait(_ cont: Async.Channel<Element>.Unbounded.State.Receive.Continuation) -> Async.Channel<Element>.Unbounded.State.Receive.Step {
+        precondition({
+            if case .none = base.slot { return true }
+            return false
+        }(), "Single-suspended-receiver invariant violated")
+
+        if let element = base.buffer.take.front {
+            return .val(element)
+        }
+        if base._closed {
+            return .end
         }
 
-        receivers = remaining
-        return found
+        base.slot = .wait(cont)
+        return .wait
+    }
+
+    @usableFromInline
+    mutating func stop() -> Async.Channel<Element>.Unbounded.State.Receive.Stop {
+        switch base.slot {
+        case .wait(let cont):
+            base.slot = .none
+            return .stop(cont)
+        case .none:
+            return .none
+        }
+    }
+}
+
+// MARK: - Close
+
+extension Async.Channel.Unbounded.State {
+    @usableFromInline
+    enum Close: Sendable {
+        case none
+        case end(Receive.Continuation)
+    }
+
+    @usableFromInline
+    mutating func close() -> Close {
+        guard !_closed else { return .none }
+
+        _closed = true
+
+        guard buffer.isEmpty else { return .none }
+
+        switch slot {
+        case .wait(let cont):
+            slot = .none
+            return .end(cont)
+        case .none:
+            return .none
+        }
     }
 }

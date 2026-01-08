@@ -423,7 +423,7 @@ struct BroadcastStressTests {
         let broadcast = Async.Broadcast<Int>(bufferCapacity: elementCount)
 
         // Collector for results
-        let results = Async.Channel.Unbounded<(id: Int, elements: [Int], cancelled: Bool)>()
+        var results = Async.Channel<(id: Int, elements: [Int], cancelled: Bool)>.Unbounded().take().ends()
 
         // Build subscriber tasks synchronously (outside group) to avoid shared mutable state
         // Store (id, task) tuples to cancel by logical id, not array index
@@ -433,7 +433,7 @@ struct BroadcastStressTests {
         for wave in 0..<5 {
             for subId in 0..<4 {
                 let id = wave * 4 + subId
-                let task = Task {
+                let task = Task { [sender = results.sender] in
                     let subscription = broadcast.subscribe()
                     var received: [Int] = []
 
@@ -451,7 +451,7 @@ struct BroadcastStressTests {
                             #expect(error == .cancelled,
                                 "Subscriber \(id): Expected .cancelled, got \(error)")
                             // Send results collected so far (not empty!)
-                            do { try results.send((id: id, elements: received, cancelled: true)) }
+                            do { try sender.send((id: id, elements: received, cancelled: true)) }
                             catch { #expect(Bool(false), "results channel unexpectedly closed: \(error)") }
                             return
                         } catch {
@@ -460,7 +460,7 @@ struct BroadcastStressTests {
                         }
                     }
                     // Normal completion
-                    do { try results.send((id: id, elements: received, cancelled: false)) }
+                    do { try sender.send((id: id, elements: received, cancelled: false)) }
                     catch { #expect(Bool(false), "results channel unexpectedly closed: \(error)") }
                 }
                 subscriberTasks.append((id: id, task: task))
@@ -510,7 +510,7 @@ struct BroadcastStressTests {
         var cancelledSubscribers = 0
         var cancelledWithElements = 0
 
-        while let result = try await results.receive() {
+        while let result = try await results.receiver.receive() {
             totalSubscribers += 1
 
             // Check ordering and duplicates for ALL subscribers (including cancelled)

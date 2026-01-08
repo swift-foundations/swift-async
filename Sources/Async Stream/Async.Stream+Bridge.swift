@@ -51,25 +51,24 @@ extension Async.Stream {
 // MARK: - From Channel.Unbounded
 
 extension Async.Stream {
-    /// Creates a stream from an unbounded channel.
+    /// Creates a stream from an unbounded channel receiver.
     ///
     /// ## Usage
     /// ```swift
-    /// let channel = Async.Channel.Unbounded<Int>()
-    /// let stream = Async.Stream(from: channel)
+    /// var channel = Async.Channel<Int>.Unbounded()
+    /// let stream = Async.Stream(from: &channel.receiver)
     /// ```
     ///
-    /// - Parameter channel: The channel to receive from.
+    /// - Parameter receiver: The receiver to read from (consumed).
     /// - Returns: A stream that emits channel elements.
     /// - Note: Cancellation errors from receive are treated as stream termination.
-    public init(from channel: Async.Channel.Unbounded<Element>) {
+    public init(from receiver: consuming Async.Channel<Element>.Unbounded.Receiver) {
+        // Use the public elements accessor to get the AsyncSequence
+        let elements = receiver.elements
         self.init {
-            Iterator {
-                do throws(Async.Channel.Unbounded<Element>.Error) {
-                    return try await channel.receive()
-                } catch {
-                    return nil
-                }
+            let box = Async.Stream<Element>.Iterator.Box(elements.makeAsyncIterator())
+            return Iterator {
+                await box.next()
             }
         }
     }
@@ -78,21 +77,21 @@ extension Async.Stream {
 // MARK: - From Channel.Bounded
 
 extension Async.Stream {
-    /// Creates a stream from a bounded channel.
+    /// Creates a stream from a bounded channel receiver.
     ///
     /// ## Usage
     /// ```swift
-    /// let channel = Async.Channel.Bounded<Int>(capacity: 10)
-    /// let stream = Async.Stream(from: channel)
+    /// let (sender, receiver) = Async.Channel<Int>.Bounded.create(capacity: 10)
+    /// let stream = Async.Stream(from: receiver)
     /// ```
     ///
-    /// - Parameter channel: The channel to receive from.
+    /// - Parameter receiver: The receiver to read from.
     /// - Returns: A stream that emits channel elements.
-    public init(from channel: Async.Channel.Bounded<Element>) {
+    public init(from receiver: Async.Channel<Element>.Bounded.Receiver) {
         self.init {
             Iterator {
-                do throws(Async.Channel.Error) {
-                    return try await channel.receive()
+                do {
+                    return try await receiver.receive()
                 } catch {
                     return nil
                 }
@@ -104,52 +103,52 @@ extension Async.Stream {
 // MARK: - To Channel
 
 extension Async.Stream {
-    /// Forwards elements to an unbounded channel.
+    /// Forwards elements to an unbounded channel sender.
     ///
     /// ## Usage
     /// ```swift
-    /// let channel = Async.Channel.Unbounded<Int>()
-    /// let task = stream.forward(to: channel)
+    /// let (sender, receiver) = Async.Channel<Int>.Unbounded.create()
+    /// let task = stream.forward(to: sender)
     /// ```
     ///
-    /// - Parameter channel: The channel to send to.
+    /// - Parameter sender: The sender to forward to.
     /// - Returns: A task that forwards elements.
     /// - Note: Stops forwarding if the channel is closed.
     @discardableResult
-    public func forward(to channel: Async.Channel.Unbounded<Element>) -> Task<Void, Never> {
+    public func forward(to sender: Async.Channel<Element>.Unbounded.Sender) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do throws(Async.Channel.Unbounded<Element>.Error) {
-                    try channel.send(element)
+                do {
+                    try sender.send(element)
                 } catch {
                     break forwarding
                 }
             }
-            channel.close()
+            sender.close()
         }
     }
 
-    /// Forwards elements to a bounded channel.
+    /// Forwards elements to a bounded channel sender.
     ///
     /// ## Usage
     /// ```swift
-    /// let channel = Async.Channel.Bounded<Int>(capacity: 10)
-    /// let task = stream.forward(to: channel)
+    /// let (sender, receiver) = Async.Channel<Int>.Bounded.create(capacity: 10)
+    /// let task = stream.forward(to: sender)
     /// ```
     ///
-    /// - Parameter channel: The channel to send to.
+    /// - Parameter sender: The sender to forward to.
     /// - Returns: A task that forwards elements.
     @discardableResult
-    public func forward(to channel: Async.Channel.Bounded<Element>) -> Task<Void, Never> {
+    public func forward(to sender: Async.Channel<Element>.Bounded.Sender) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do throws(Async.Channel.Error) {
-                    try await channel.send(element)
+                do {
+                    try await sender.send(element)
                 } catch {
                     break forwarding
                 }
             }
-            channel.close()
+            sender.close()
         }
     }
 
@@ -190,24 +189,26 @@ extension Async.Broadcast {
     }
 }
 
-extension Async.Channel.Unbounded {
-    /// Creates a stream from this channel.
+extension Async.Channel.Unbounded.Receiver {
+    /// Creates a stream from this receiver (consumes the receiver).
     ///
     /// ## Usage
     /// ```swift
-    /// let stream = channel.stream
+    /// var channel = Async.Channel<Int>.Unbounded()
+    /// let stream = channel.receiver.stream()
     /// ```
-    public var stream: Async.Stream<Element> {
-        Async.Stream(from: self)
+    public consuming func stream() -> Async.Stream<Element> {
+        Async.Stream(from: consume self)
     }
 }
 
-extension Async.Channel.Bounded {
-    /// Creates a stream from this channel.
+extension Async.Channel.Bounded.Receiver {
+    /// Creates a stream from this receiver.
     ///
     /// ## Usage
     /// ```swift
-    /// let stream = channel.stream
+    /// let (sender, receiver) = Async.Channel<Int>.Bounded.create(capacity: 10)
+    /// let stream = receiver.stream
     /// ```
     public var stream: Async.Stream<Element> {
         Async.Stream(from: self)

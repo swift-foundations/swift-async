@@ -9,110 +9,168 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import StandardsCollections
-import Synchronization
-
 extension Async.Channel {
-    /// Unbounded MPMC channel with async receive and cancellation support.
+    /// Unbounded channel with single-suspended-receiver semantics.
     ///
-    /// Provides a multi-producer, multi-consumer channel with unlimited
-    /// buffering capacity. Sends are synchronous and never block. Receives
-    /// are asynchronous and suspend until an element is available.
-    ///
-    /// ## Pattern
-    /// - Producers call `send(_:)` (synchronous, throws if closed)
-    /// - Consumers call `receive()` (async, suspends until element available)
-    ///
-    /// ## Cancellation Safety
-    /// When a task is cancelled while waiting in `receive()`:
-    /// - The waiter is immediately removed from the queue (O(n) deque rebuild)
-    /// - The operation throws `Error.cancelled`
-    /// - Cancelled tasks always make progress (no deadlock)
-    ///
-    /// ## FIFO Waiter Queue
-    /// Multiple tasks may call `receive()` concurrently. Waiters are served
-    /// in FIFO order. Cancellation removes the specific waiter by ID,
-    /// preserving order for other waiters.
+    /// Provides an unbounded-capacity channel where sends are synchronous
+    /// (never suspend) and receives may suspend when the buffer is empty.
     ///
     /// ## Usage
     /// ```swift
-    /// let channel = Async.Channel.Unbounded<Message>()
+    /// var channel = Async.Channel<Int>.Unbounded()
     ///
-    /// // Producer (any thread, sync)
-    /// try channel.send(message)
-    /// channel.close()
+    /// // Producer task
+    /// Task {
+    ///     try channel.sender.send(1)
+    ///     try channel.sender.send(2)
+    ///     channel.close()
+    /// }
     ///
-    /// // Consumer (single task, async)
-    /// while let msg = try await channel.receive() {
-    ///     process(msg)
+    /// // Consumer (single-suspended-receiver)
+    /// while let value = try await channel.receiver.receive() {
+    ///     print(value)
     /// }
     /// ```
     ///
-    /// ## Thread Safety
-    /// All operations are protected by an internal mutex.
-    /// Uses `@unchecked Sendable` because internal state is protected
-    /// by mutex synchronization.
-    public final class Unbounded<Element: Sendable>: @unchecked Sendable {
-        internal let _state: Mutex<State>
+    /// ## Design
+    /// - `Unbounded` is `~Copyable` - channel identity cannot be duplicated
+    /// - `sender` is `Copyable` - can be shared across tasks
+    /// - `receiver` is `~Copyable` - exactly one receiver per channel
+    /// - Single-suspended-receiver is both type-enforced (one receiver) and
+    ///   runtime-enforced (precondition on concurrent suspension)
+    ///
+    /// ## Lifecycle
+    /// - Close via explicit `close()` or `sender.close()`
+    /// - Implicit close when storage is released (last reference drops)
+    /// - Dropping `Sender` views has no lifecycle effect
+    ///
+    /// ## Error Handling
+    /// Operations use typed throws for exhaustive error handling:
+    /// ```swift
+    /// do {
+    ///     try channel.sender.send(value)
+    /// } catch .closed {
+    ///     // Channel was closed
+    /// }
+    /// ```
+    public struct Unbounded: ~Copyable, @unchecked Sendable {
+        @usableFromInline
+        let storage: Storage
+
+        /// View for sending elements to this channel.
+        ///
+        /// `Sender` is `Copyable` - multiple sender views can exist,
+        /// and they all share the same underlying channel.
+        /// Dropping a `Sender` has no lifecycle effect.
+        public let sender: Sender
+
+        /// View for receiving elements from this channel.
+        ///
+        /// `Receiver` is `~Copyable` - exactly one receiver exists per channel.
+        /// This enforces single-receiver semantics at the type level.
+        /// Dropping the `Receiver` has no lifecycle effect.
+        public var receiver: Receiver
 
         /// Creates a new unbounded channel.
         public init() {
-            self._state = Mutex(State())
+            let storage = Storage()
+            self.storage = storage
+            self.sender = Sender(storage: storage)
+            self.receiver = Receiver(storage: storage)
+        }
+
+        /// Close the channel, signaling no more elements will be sent.
+        ///
+        /// After close:
+        /// - `send()` throws `.closed`
+        /// - `receive()` drains buffer then returns `nil`
+        public func close() {
+            sender.close()
+        }
+
+        /// Whether the channel has been closed.
+        public var closed: Bool {
+            storage.withLock { $0.closed }
         }
     }
 }
 
-// MARK: - Receive
+// MARK: - Take (consuming accessors)
 
 extension Async.Channel.Unbounded {
-    /// Receive accessor for grouped operations.
-    public var receive: Receive { Receive(channel: self) }
+    /// Consuming accessor for moving endpoints out of the channel.
+    ///
+    /// ```swift
+    /// let ends = channel.take().ends()
+    /// try ends.sender.send(42)
+    /// let value = try await ends.receiver.receive()
+    /// ```
+    public consuming func take() -> Take {
+        Take(channel: consume self)
+    }
 
-    /// Receive namespace providing receive operations.
-    public struct Receive: Sendable {
-        let channel: Async.Channel.Unbounded<Element>
+    /// Consuming accessor namespace.
+    public struct Take: ~Copyable, @unchecked Sendable {
+        @usableFromInline
+        var channel: Async.Channel<Element>.Unbounded
 
-        init(channel: Async.Channel.Unbounded<Element>) {
+        @usableFromInline
+        init(channel: consuming Async.Channel<Element>.Unbounded) {
             self.channel = channel
         }
 
-        /// Try to receive an element without suspending.
-        ///
-        /// - Returns: The next element if available, `nil` if the buffer is empty.
-        public func tryOne() -> Element? {
-            channel._state.withLock { state -> Element? in
-                state.buffer.take.front
-            }
+        /// Consume the channel and return both endpoints as a bundle.
+        public consuming func ends() -> Ends {
+            let storage = channel.storage
+            let receiver = consume channel.receiver
+            return Ends(storage: storage, receiver: receiver)
         }
     }
 }
 
-// MARK: - Lifecycle
+// MARK: - Ends
 
 extension Async.Channel.Unbounded {
-    /// Close the channel, signaling no more elements will be sent.
+    /// Bundle containing both sender and receiver.
     ///
-    /// After this call:
-    /// - Any pending `receive()` returns `nil`
-    /// - Future `receive()` calls drain buffer then return `nil`
-    /// - Future `send()` calls throw `Error.closed`
-    public func close() {
-        // All receivers are non-cancelled (cancellation eagerly removes)
-        let receivers = _state.withLock { state in
-            state.pump(closing: ())
+    /// `Ends` is `~Copyable` because it contains the `~Copyable` receiver.
+    /// Use `channel.take.ends` to consume the channel and obtain this bundle.
+    public struct Ends: ~Copyable, @unchecked Sendable {
+        @usableFromInline
+        let storage: Storage
+
+        @usableFromInline
+        var _receiver: Receiver
+
+        /// View for receiving elements.
+        public var receiver: Receiver {
+            _read {
+                yield _receiver
+            }
+            _modify {
+                yield &_receiver
+            }
         }
 
-        // Resume all with .finished
-        for r in receivers {
-            r.continuation.resume(returning: .finished)
+        /// View for sending elements.
+        public var sender: Sender {
+            Sender(storage: storage)
         }
-    }
 
-    /// Whether the channel has been closed.
-    ///
-    /// Note: Even when `true`, `receive()` may still return elements
-    /// if the buffer is not yet drained.
-    public var isClosed: Bool {
-        _state.withLock { $0.`is`.closed }
+        @usableFromInline
+        init(storage: Storage, receiver: consuming Receiver) {
+            self.storage = storage
+            self._receiver = receiver
+        }
+
+        /// Close the channel.
+        public func close() {
+            sender.close()
+        }
+
+        /// Whether the channel has been closed.
+        public var closed: Bool {
+            sender.closed
+        }
     }
 }

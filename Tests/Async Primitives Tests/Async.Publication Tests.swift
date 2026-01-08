@@ -200,7 +200,7 @@ extension Publication.Test.Performance {
         let iterations = 1_000
         let range = 0..<iterations
 
-        let observedValues = Async.Channel.Unbounded<Int>()
+        var ends = Async.Channel<Int>.Unbounded().take().ends()
 
         await withTaskGroup(of: Void.self) { group in
             // Publisher
@@ -212,21 +212,21 @@ extension Publication.Test.Performance {
             }
 
             // Taker
-            group.addTask {
+            group.addTask { [sender = ends.sender] in
                 for _ in range {
                     if let value = publication.take() {
-                        try? observedValues.send(value)
+                        try? sender.send(value)
                     }
                     await Task.yield()
                 }
             }
         }
 
-        observedValues.close()
+        ends.close()
 
         // Collect observed values
         var observed: [Int] = []
-        while let value = try? await observedValues.receive() {
+        while let value = try? await ends.receiver.receive() {
             observed.append(value)
         }
 
@@ -251,7 +251,7 @@ extension Publication.Test.Performance {
         let iterationsPerActor = 100
         let totalRange = 0..<(publisherCount * iterationsPerActor)
 
-        let observedValues = Async.Channel.Unbounded<Int>()
+        var ends = Async.Channel<Int>.Unbounded().take().ends()
 
         await withTaskGroup(of: Void.self) { group in
             // Multiple publishers
@@ -267,10 +267,10 @@ extension Publication.Test.Performance {
 
             // Multiple takers
             for _ in 0..<takerCount {
-                group.addTask {
+                group.addTask { [sender = ends.sender] in
                     for _ in 0..<iterationsPerActor {
                         if let value = publication.take() {
-                            try? observedValues.send(value)
+                            try? sender.send(value)
                         }
                         await Task.yield()
                     }
@@ -278,11 +278,11 @@ extension Publication.Test.Performance {
             }
         }
 
-        observedValues.close()
+        ends.close()
 
         // Collect and validate
         var observed: [Int] = []
-        while let value = try? await observedValues.receive() {
+        while let value = try? await ends.receiver.receive() {
             observed.append(value)
         }
 
