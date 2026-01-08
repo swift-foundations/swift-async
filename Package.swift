@@ -25,7 +25,6 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/coenttb/swift-kernel.git", from: "0.1.0"),
         .package(path: "../swift-buffer"),
         .package(path: "../../swift-standards/swift-standards")
     ],
@@ -33,7 +32,6 @@ let package = Package(
         .target(
             name: "Async Primitives",
             dependencies: [
-                .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "StandardsCollections", package: "swift-standards"),
                 .product(name: "Dimension", package: "swift-standards"),
             ],
@@ -43,7 +41,6 @@ let package = Package(
             name: "Async Stream",
             dependencies: [
                 "Async Primitives",
-                .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "Buffer", package: "swift-buffer"),
             ],
             path: "Sources/Async Stream"

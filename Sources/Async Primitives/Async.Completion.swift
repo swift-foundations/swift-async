@@ -9,7 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Kernel
 public import Synchronization
 
 extension Async {
@@ -63,12 +62,12 @@ extension Async {
         }
 
         let state: Atomic<State>
-        private var continuation: CheckedContinuation<Result, Never>?
-        private let lock = Kernel.Thread.Mutex()
+        private let _continuation: Mutex<CheckedContinuation<Result, Never>?>
 
         /// Creates a new completion in pending state.
         public init() {
             self.state = Atomic(.pending)
+            self._continuation = Mutex(nil)
         }
 
         /// Atomic state for CAS discipline.
@@ -115,9 +114,7 @@ extension Async.Completion {
     ///
     /// - Parameter cont: The continuation to resume with the result.
     public func setContinuation(_ cont: CheckedContinuation<Result, Never>) {
-        lock.lock()
-        self.continuation = cont
-        lock.unlock()
+        _continuation.withLock { $0 = cont }
     }
 }
 
@@ -151,10 +148,11 @@ extension Async.Completion {
             ordering: .acquiringAndReleasing
         )
         if exchanged {
-            lock.lock()
-            let cont = continuation
-            continuation = nil
-            lock.unlock()
+            let cont = _continuation.withLock { cont in
+                let captured = cont
+                cont = nil
+                return captured
+            }
             cont?.resume(returning: .success(value))
         }
         return exchanged
@@ -172,10 +170,11 @@ extension Async.Completion {
             ordering: .acquiringAndReleasing
         )
         if exchanged {
-            lock.lock()
-            let cont = continuation
-            continuation = nil
-            lock.unlock()
+            let cont = _continuation.withLock { cont in
+                let captured = cont
+                cont = nil
+                return captured
+            }
             cont?.resume(returning: .failure(.timeout))
         }
         return exchanged
@@ -201,10 +200,11 @@ extension Async.Completion {
             )
         }
         if exchanged {
-            lock.lock()
-            let cont = continuation
-            continuation = nil
-            lock.unlock()
+            let cont = _continuation.withLock { cont in
+                let captured = cont
+                cont = nil
+                return captured
+            }
             cont?.resume(returning: .failure(.cancellation))
         }
         return exchanged
@@ -224,10 +224,11 @@ extension Async.Completion {
             ordering: .acquiringAndReleasing
         )
         if exchanged {
-            lock.lock()
-            let cont = continuation
-            continuation = nil
-            lock.unlock()
+            let cont = _continuation.withLock { cont in
+                let captured = cont
+                cont = nil
+                return captured
+            }
             cont?.resume(returning: .failure(.failure(error)))
         }
         return exchanged
