@@ -18,6 +18,6 @@ struct AsyncTests {
     @Test("Async namespace exists")
     func namespaceExists() {
         _ = Async.self
-        _ = Async.Channel.self
+        _ = Async.Channel<Never>.self
     }
 }

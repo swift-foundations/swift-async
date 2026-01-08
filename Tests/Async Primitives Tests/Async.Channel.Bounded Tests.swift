@@ -161,12 +161,12 @@ struct BoundedChannelTests {
 
         try await sender.send(1)
 
-        let sendTask = Task { () -> Async.Channel<Element>.Error? in
+        let sendTask = Task { () -> Async.Channel<Int>.Error? in
             await started.arrive()
             do {
                 try await sender.send(2)
                 return nil
-            } catch let error as Async.Channel<Element>.Error {
+            } catch let error as Async.Channel<Int>.Error {
                 return error
             } catch {
                 return nil

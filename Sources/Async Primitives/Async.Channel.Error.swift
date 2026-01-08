@@ -5,6 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 08/01/2026.
 //
 
+extension Async.Channel {
+    /// Errors that can occur during channel operations.
+    public typealias Error = Async._ChannelError
+}
+
 extension Async {
     /// Errors that can occur during channel operations.
     ///
@@ -21,8 +26,4 @@ extension Async {
         /// Thrown when the task is cancelled while waiting.
         case cancelled
     }
-}
-
-extension Async.Channel {
-    public typealias Error = Async._ChannelError
 }

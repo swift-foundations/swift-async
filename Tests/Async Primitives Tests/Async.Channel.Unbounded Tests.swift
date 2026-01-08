@@ -36,7 +36,7 @@ struct UnboundedChannelTests {
     func closedChannelRejectsSend() {
         var ends = Async.Channel<Int>.Unbounded().take().ends()
         ends.close()
-        #expect(throws: Async.Channel<Element>.Error.closed) {
+        #expect(throws: Async.Channel<Int>.Error.closed) {
             try ends.sender.send(42)
         }
     }
@@ -205,7 +205,7 @@ struct UnboundedChannelTests {
         do {
             _ = try await receiveTask.value
             Issue.record("Expected cancellation error")
-        } catch let error as Async.Channel<Element>.Error {
+        } catch let error as Async.Channel<Int>.Error {
             #expect(error == .cancelled)
         } catch {
             Issue.record("Unexpected error type: \(error)")

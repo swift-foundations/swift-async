@@ -122,10 +122,35 @@ extension Async.Channel.Unbounded.State {
         }
     }
 
+    /// Accessor for receive operations using `_read`/`_modify` to maintain
+    /// proper ownership semantics through the accessor chain.
+    ///
+    /// The `_modify` accessor ensures the buffer is uniquely referenced before
+    /// yielding, preventing CoW corruption when nested accessors (like `Deque.take`)
+    /// expect unique ownership.
     @usableFromInline
     var receive: Receive {
-        get { Receive(self) }
-        set { self = newValue.base }
+        _read {
+            yield Receive(self)
+        }
+        _modify {
+            // CRITICAL: Ensure buffer uniqueness BEFORE creating wrapper.
+            // This must happen before copying self to maintain CoW invariant.
+            // Without this, the Deque._modify accessor receives a shared reference
+            // and ensureUnique() triggers a copy with corrupted capacity.
+            buffer.reserve(0)
+
+            // Transfer state to wrapper (creates copy with shared buffer reference)
+            var temp = Receive(self)
+
+            // Release self's buffer reference - temp is now the unique owner.
+            // This mirrors the ownership transfer pattern in Deque.Take._modify.
+            buffer = Deque()
+
+            // Restore state from wrapper after mutation completes
+            defer { self = temp.base }
+            yield &temp
+        }
     }
 }
 
