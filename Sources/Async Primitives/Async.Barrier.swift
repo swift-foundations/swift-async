@@ -74,29 +74,34 @@ extension Async {
         /// After the barrier has been released, subsequent calls return immediately.
         public func arrive() async {
             await withCheckedContinuation { continuation in
-                let shouldResume: Bool = _state.withLock { state in
+                // Collect waiters to resume OUTSIDE lock
+                let result: (shouldResume: Bool, waitersToResume: [CheckedContinuation<Void, Never>]) = _state.withLock { state in
                     // Already released - proceed immediately
                     if state.released {
-                        return true
+                        return (true, [])
                     }
 
                     state.arrived += 1
 
                     if state.arrived >= parties {
-                        // Last party - release everyone
+                        // Last party - collect waiters for resumption outside lock
                         state.released = true
-                        for waiter in state.waiters {
-                            waiter.resume()
-                        }
+                        let waiters = state.waiters
                         state.waiters = []
-                        return true
+                        return (true, waiters)
                     } else {
                         // Wait for remaining parties
                         state.waiters.append(continuation)
-                        return false
+                        return (false, [])
                     }
                 }
-                if shouldResume {
+
+                // Resume waiters OUTSIDE lock (FIFO order)
+                for waiter in result.waitersToResume {
+                    waiter.resume()
+                }
+
+                if result.shouldResume {
                     continuation.resume()
                 }
             }

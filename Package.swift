@@ -35,6 +35,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "StandardsCollections", package: "swift-standards"),
+                .product(name: "Dimension", package: "swift-standards"),
             ],
             path: "Sources/Async Primitives"
         ),
