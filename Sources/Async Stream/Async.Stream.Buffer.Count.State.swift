@@ -28,13 +28,13 @@ extension Async.Stream.Buffer.Count {
         let count: Int
 
         @usableFromInline
-        var ring: Buffer.Ring<Element>
+        var ring: Buffer.Ring.Fixed<Element>
 
         @usableFromInline
         init(stream: Async.Stream<Element>, count: Int) {
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.count = max(1, count)
-            self.ring = Buffer.Ring<Element>(capacity: count)
+            self.ring = Buffer.Ring.Fixed<Element>(capacity: count)
         }
     }
 }
@@ -46,7 +46,10 @@ extension Async.Stream.Buffer.Count.State {
             guard let element = await box.next() else {
                 // Upstream complete - emit remaining if any
                 if ring.count > 0 {
-                    return ring.drain()
+                    var result: [Element] = []
+                    result.reserveCapacity(ring.count)
+                    ring.drain { result.append($0) }
+                    return result
                 }
                 return nil
             }
@@ -54,7 +57,10 @@ extension Async.Stream.Buffer.Count.State {
             _ = ring.push(element)
 
             if ring.count >= count {
-                return ring.drain()
+                var result: [Element] = []
+                result.reserveCapacity(ring.count)
+                ring.drain { result.append($0) }
+                return result
             }
         }
     }
