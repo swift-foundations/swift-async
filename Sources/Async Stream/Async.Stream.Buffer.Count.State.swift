@@ -28,13 +28,13 @@ extension Async.Stream.Buffer.Count {
         let count: Int
 
         @usableFromInline
-        var ring: Buffer.Ring.Fixed<Element>
+        var ring: Buffer.Ring.Bounded<Element>
 
         @usableFromInline
         init(stream: Async.Stream<Element>, count: Int) {
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.count = max(1, count)
-            self.ring = Buffer.Ring.Fixed<Element>(capacity: count)
+            self.ring = Buffer.Ring.Bounded<Element>(capacity: count)
         }
     }
 }
