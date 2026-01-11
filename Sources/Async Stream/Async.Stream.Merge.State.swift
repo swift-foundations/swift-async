@@ -34,7 +34,7 @@ extension Async.Stream.Merge {
 
 extension Async.Stream.Merge.State {
     @usableFromInline
-    func send(_ element: Element) {
+    func send(_ element: sending Element) {
         if let cont = continuation {
             continuation = nil
             cont.resume(returning: element)

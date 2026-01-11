@@ -34,12 +34,12 @@ extension Async.Stream.Replay {
 
 extension Async.Stream.Replay.Subscription {
     @usableFromInline
-    nonisolated func receive(_ element: Element) {
+    nonisolated func receive(_ element: sending Element) {
         Task { await _receive(element) }
     }
 
     @usableFromInline
-    func _receive(_ element: Element) {
+    func _receive(_ element: sending Element) {
         if let cont = continuation {
             continuation = nil
             cont.resume(returning: element)

@@ -40,13 +40,13 @@ extension Async.Stream.CombineLatest {
 
 extension Async.Stream.CombineLatest.State {
     @usableFromInline
-    func updateA(_ value: A) {
+    func updateA(_ value: sending A) {
         latestA = value
         emitIfPossible()
     }
 
     @usableFromInline
-    func updateB(_ value: B) {
+    func updateB(_ value: sending B) {
         latestB = value
         emitIfPossible()
     }

@@ -36,7 +36,7 @@ extension Async.Stream.Replay {
 
 extension Async.Stream.Replay.State {
     @usableFromInline
-    func send(_ element: Element) {
+    func send(_ element: sending Element) {
         // Add to buffer
         buffer.append(element)
         if buffer.count > bufferSize {
