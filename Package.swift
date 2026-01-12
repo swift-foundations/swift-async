@@ -24,7 +24,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../swift-primitives/swift-async-primitives"),
         .package(path: "../../swift-primitives/swift-buffer-primitives"),
-        .package(path: "../../swift-primitives/swift-test-support-primitives"),
+        .package(path: "../../swift-primitives/swift-test-primitives"),
     ],
     targets: [
         .target(
@@ -45,7 +45,7 @@ let package = Package(
             name: "Async Stream Tests",
             dependencies: [
                 "Async",
-                .product(name: "Test Support Primitives", package: "swift-test-support-primitives"),
+                .product(name: "Test Primitives", package: "swift-test-primitives"),
             ]
         ),
     ],
