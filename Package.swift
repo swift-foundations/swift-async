@@ -22,9 +22,9 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-primitives/swift-async-primitives.git", from: "0.0.1"),
-        .package(url: "https://github.com/swift-primitives/swift-buffer-primitives.git", from: "0.0.1"),
-        .package(url: "https://github.com/swift-primitives/swift-test-primitives.git", from: "0.0.1"),
+        .package(path: "../../swift-primitives/swift-async-primitives"),
+        .package(path: "../../swift-primitives/swift-buffer-primitives"),
+        .package(path: "../../swift-primitives/swift-test-primitives"),
     ],
     targets: [
         .target(
