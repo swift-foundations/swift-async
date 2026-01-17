@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Reference_Primitives
 
 extension Async.Stream.WithLatestFrom {
     /// Internal state for withLatestFrom.

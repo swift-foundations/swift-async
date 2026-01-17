@@ -9,15 +9,15 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Async_Primitives
 public import Reference_Primitives
 
-extension Async.Stream.Iterator {
-    /// Internal helper to wrap async iterators for capture in `@Sendable` closures.
+extension Reference.Indirect.Unchecked where Value: AsyncIteratorProtocol {
+    /// Advances to the next element and returns it, or nil if no next element exists.
     ///
-    /// Uses `Reference.Indirect.Unchecked` to allow boxing non-Sendable iterators.
-    /// This is an explicit opt-in to bypass Sendable checking - the caller is
-    /// responsible for ensuring safe concurrent access.
+    /// This extension enables using `Reference.Indirect.Unchecked` as a boxed async iterator,
+    /// allowing non-Sendable iterators to be captured in `@Sendable` closures.
     @usableFromInline
-    typealias Box<I: AsyncIteratorProtocol> = Reference.Indirect<I>.Unchecked
+    func next() async -> Value.Element? {
+        try? await indirect.value.next()
+    }
 }

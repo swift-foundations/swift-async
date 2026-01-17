@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Reference_Primitives
 
 extension Async.Stream.Drop {
     /// Internal state for drop count.

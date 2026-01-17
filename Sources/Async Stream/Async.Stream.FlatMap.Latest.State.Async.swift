@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Reference_Primitives
 
 extension Async.Stream.FlatMap.Latest.State {
     /// Internal state for flatMapLatest with async transform.

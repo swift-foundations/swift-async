@@ -6,6 +6,7 @@
 //
 
 public import Async_Primitives
+public import Reference_Primitives
 
 extension Async.Stream.Transducer {
     /// Actor managing transducer state.
