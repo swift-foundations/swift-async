@@ -9,7 +9,7 @@ let package = Package(
         .iOS(.v26),
         .tvOS(.v26),
         .watchOS(.v26),
-        .visionOS(.v26),
+        .visionOS(.v26)
     ],
     products: [
         .library(
@@ -19,13 +19,12 @@ let package = Package(
         .library(
             name: "Async Stream",
             targets: ["Async Stream"]
-        ),
+        )
     ],
     dependencies: [
         .package(path: "../../swift-primitives/swift-async-primitives"),
         .package(path: "../../swift-primitives/swift-buffer-primitives"),
-        .package(path: "../../swift-primitives/swift-reference-primitives"),
-        .package(path: "../../swift-primitives/swift-test-primitives"),
+        .package(path: "../../swift-primitives/swift-reference-primitives")
     ],
     targets: [
         .target(
@@ -33,23 +32,16 @@ let package = Package(
             dependencies: [
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
-                .product(name: "Reference Primitives", package: "swift-reference-primitives"),
+                .product(name: "Reference Primitives", package: "swift-reference-primitives")
             ]
         ),
         .target(
             name: "Async",
             dependencies: [
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
-                "Async Stream",
+                "Async Stream"
             ]
-        ),
-        .testTarget(
-            name: "Async Stream Tests",
-            dependencies: [
-                "Async",
-                .product(name: "Test Primitives", package: "swift-test-primitives"),
-            ]
-        ),
+        )
     ],
     swiftLanguageModes: [.v6]
 )
@@ -58,7 +50,7 @@ for target in package.targets where ![.system, .binary, .plugin].contains(target
     let settings: [SwiftSetting] = [
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
-        .enableUpcomingFeature("MemberImportVisibility"),
+        .enableUpcomingFeature("MemberImportVisibility")
     ]
     target.swiftSettings = (target.swiftSettings ?? []) + settings
 }
