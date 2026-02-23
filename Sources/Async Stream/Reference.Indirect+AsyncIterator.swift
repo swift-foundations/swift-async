@@ -9,12 +9,12 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Reference_Primitives
+public import Ownership_Primitives
 
-extension Reference.Indirect.Unchecked where Value: AsyncIteratorProtocol {
+extension Ownership.Mutable.Unchecked where Value: AsyncIteratorProtocol {
     /// Advances to the next element and returns it, or nil if no next element exists.
     ///
-    /// This extension enables using `Reference.Indirect.Unchecked` as a boxed async iterator,
+    /// This extension enables using `Ownership.Mutable.Unchecked` as a boxed async iterator,
     /// allowing non-Sendable iterators to be captured in `@Sendable` closures.
     ///
     /// ## Safety
@@ -26,7 +26,7 @@ extension Reference.Indirect.Unchecked where Value: AsyncIteratorProtocol {
     /// ## Correct Usage
     ///
     /// ```swift
-    /// let box = Reference.Indirect.Unchecked(asyncIterator)
+    /// let box = Ownership.Mutable.Unchecked(asyncIterator)
     /// Task {
     ///     // Single consumer — safe
     ///     while let value = await box.next() {
@@ -36,6 +36,6 @@ extension Reference.Indirect.Unchecked where Value: AsyncIteratorProtocol {
     /// ```
     @usableFromInline
     func next() async -> Value.Element? {
-        try? await indirect.value.next()
+        try? await mutable.value.next()
     }
 }

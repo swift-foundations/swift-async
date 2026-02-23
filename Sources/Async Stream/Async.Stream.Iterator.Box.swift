@@ -10,12 +10,12 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Reference_Primitives
+public import Ownership_Primitives
 
 extension Async.Stream.Iterator {
     /// Internal helper to wrap async iterators for capture in `@Sendable` closures.
     ///
-    /// Uses `Reference.Indirect.Unchecked` to allow boxing non-Sendable iterators.
+    /// Uses `Ownership.Mutable.Unchecked` to allow boxing non-Sendable iterators.
     ///
     /// ## Safety
     ///
@@ -34,5 +34,5 @@ extension Async.Stream.Iterator {
     /// }
     /// ```
     @usableFromInline
-    typealias Box<I: AsyncIteratorProtocol> = Reference.Indirect<I>.Unchecked
+    typealias Box<I: AsyncIteratorProtocol> = Ownership.Mutable<I>.Unchecked
 }

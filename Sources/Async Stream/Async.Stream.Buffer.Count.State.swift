@@ -10,8 +10,9 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Reference_Primitives
+public import Ownership_Primitives
 public import Buffer_Primitives
+public import Cardinal_Primitives
 
 extension Async.Stream.Buffer {
     /// Namespace for count-based buffering.
@@ -26,16 +27,17 @@ extension Async.Stream.Buffer.Count {
         let box: Async.Stream<Element>.Iterator.Box<Async.Stream<Element>.Iterator>
 
         @usableFromInline
-        let count: Int
+        let count: Index<Element>.Count
 
         @usableFromInline
-        var ring: Buffer.Ring.Bounded<Element>
+        var ring: Buffer<Element>.Ring.Bounded
 
         @usableFromInline
         init(stream: Async.Stream<Element>, count: Int) {
+            let typedCount = try! Index<Element>.Count(max(1, count))
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
-            self.count = max(1, count)
-            self.ring = Buffer.Ring.Bounded<Element>(capacity: count)
+            self.count = typedCount
+            self.ring = Buffer<Element>.Ring.Bounded(minimumCapacity: typedCount)
         }
     }
 }
@@ -46,20 +48,18 @@ extension Async.Stream.Buffer.Count.State {
         while true {
             guard let element = await box.next() else {
                 // Upstream complete - emit remaining if any
-                if ring.count > 0 {
+                if ring.count > .zero {
                     var result: [Element] = []
-                    result.reserveCapacity(ring.count)
                     ring.drain { result.append($0) }
                     return result
                 }
                 return nil
             }
 
-            _ = ring.push(element)
+            ring.push.back(element)
 
             if ring.count >= count {
                 var result: [Element] = []
-                result.reserveCapacity(ring.count)
                 ring.drain { result.append($0) }
                 return result
             }

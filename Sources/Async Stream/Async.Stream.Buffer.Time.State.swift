@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Reference_Primitives
+public import Ownership_Primitives
 
 extension Async.Stream.Buffer.Time {
     /// Internal state for time-based buffering.
