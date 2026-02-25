@@ -17,6 +17,10 @@ let package = Package(
             targets: ["Async"]
         ),
         .library(
+            name: "Async Sequence",
+            targets: ["Async Sequence"]
+        ),
+        .library(
             name: "Async Stream",
             targets: ["Async Stream"]
         )
@@ -28,6 +32,12 @@ let package = Package(
         .package(path: "../swift-dependencies/integration/swift-clocks-dependency"),
     ],
     targets: [
+        .target(
+            name: "Async Sequence",
+            dependencies: [
+                .product(name: "Async Primitives", package: "swift-async-primitives"),
+            ]
+        ),
         .target(
             name: "Async Stream",
             dependencies: [
@@ -41,7 +51,21 @@ let package = Package(
             name: "Async",
             dependencies: [
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
+                "Async Sequence",
                 "Async Stream"
+            ]
+        ),
+        .testTarget(
+            name: "Async Sequence Tests",
+            dependencies: [
+                "Async",
+            ]
+        ),
+        .testTarget(
+            name: "Async Stream Tests",
+            dependencies: [
+                "Async",
+                .product(name: "Clocks Dependency", package: "swift-clocks-dependency"),
             ]
         )
     ],
@@ -54,6 +78,7 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("MemberImportVisibility"),
+        .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .enableExperimentalFeature("Lifetimes"),
         .enableExperimentalFeature("SuppressedAssociatedTypes"),
         .enableExperimentalFeature("SuppressedAssociatedTypesWithDefaults"),

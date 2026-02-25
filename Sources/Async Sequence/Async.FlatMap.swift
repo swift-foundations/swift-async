@@ -1,0 +1,90 @@
+// ===----------------------------------------------------------------------===//
+//
+// This source file is part of the swift-async open source project
+//
+// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE for license information
+//
+// ===----------------------------------------------------------------------===//
+
+extension Async {
+    /// An asynchronous sequence that concatenates inner sequences produced by a transform.
+    ///
+    /// `FlatMap` preserves caller isolation — the transform runs on the actor
+    /// that created the pipeline, not on the cooperative pool. Inner sequences
+    /// are consumed serially (one at a time, in order).
+    ///
+    /// Created by calling `.flatMap(_:)` on any `AsyncSequence`.
+    public struct FlatMap<Base: AsyncSequence, Segment: AsyncSequence>: AsyncSequence {
+        public typealias Element = Segment.Element
+
+        @usableFromInline
+        let base: Base
+
+        @usableFromInline
+        let transform: (Base.Element) async -> Segment
+
+        @usableFromInline
+        init(base: Base, transform: @escaping (Base.Element) async -> Segment) {
+            self.base = base
+            self.transform = transform
+        }
+
+        public struct Iterator: AsyncIteratorProtocol {
+            @usableFromInline
+            var baseIterator: Base.AsyncIterator
+
+            @usableFromInline
+            let transform: (Base.Element) async -> Segment
+
+            @usableFromInline
+            var currentIterator: Segment.AsyncIterator?
+
+            @usableFromInline
+            init(
+                baseIterator: Base.AsyncIterator,
+                transform: @escaping (Base.Element) async -> Segment
+            ) {
+                self.baseIterator = baseIterator
+                self.transform = transform
+                self.currentIterator = nil
+            }
+
+            @inlinable
+            public mutating func next() async -> Segment.Element? {
+                while true {
+                    if var inner = currentIterator {
+                        if let element = try? await inner.next(isolation: #isolation) {
+                            currentIterator = inner
+                            return element
+                        }
+                        currentIterator = nil
+                    }
+
+                    guard let base = try? await baseIterator.next(isolation: #isolation) else {
+                        return nil
+                    }
+
+                    let segment = await transform(base)
+                    currentIterator = segment.makeAsyncIterator()
+                }
+            }
+        }
+
+        @inlinable
+        public func makeAsyncIterator() -> Iterator {
+            Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
+        }
+    }
+}
+
+// MARK: - Conditional Sendable
+
+extension Async.FlatMap: @unchecked Sendable
+    where Base: Sendable, Base.Element: Sendable, Segment: Sendable {}
+
+extension Async.FlatMap.Iterator: @unchecked Sendable
+    where Base.AsyncIterator: Sendable, Base.Element: Sendable,
+          Segment: Sendable, Segment.AsyncIterator: Sendable {}
