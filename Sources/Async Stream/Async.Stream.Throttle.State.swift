@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Clock_Primitives
+public import Clocks_Dependency
 public import Ownership_Primitives
 
 extension Async.Stream {
@@ -28,7 +30,7 @@ extension Async.Stream.Throttle {
         let duration: Duration
 
         @usableFromInline
-        var lastEmitTime: ContinuousClock.Instant?
+        var lastEmitTime: Clock.`Any`<Duration>.Instant?
 
         @usableFromInline
         init(stream: Async.Stream<Element>, duration: Duration) {
@@ -41,13 +43,14 @@ extension Async.Stream.Throttle {
 extension Async.Stream.Throttle.State {
     @usableFromInline
     func next() async -> Element? {
+        @Dependency(\.clock) var clock
         while true {
             guard let element = await box.next() else { return nil }
 
-            let now = ContinuousClock.now
+            let now = clock.now
 
             if let lastTime = lastEmitTime {
-                let elapsed = now - lastTime
+                let elapsed = lastTime.duration(to: now)
                 if elapsed < duration {
                     // Too soon, skip this element
                     continue

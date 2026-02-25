@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Clocks_Dependency
 public import Ownership_Primitives
 
 // MARK: - Delay
@@ -29,8 +30,9 @@ extension Async.Stream {
         Self { [self] in
             let box = Async.Stream<Element>.Iterator.Box(self.makeAsyncIterator())
             return Iterator {
+                @Dependency(\.clock) var clock
                 guard let element = await box.next() else { return nil }
-                try? await Task.sleep(for: duration)
+                try? await clock.sleep(until: clock.now.advanced(by: duration))
                 if Task.isCancelled { return nil }
                 return element
             }

@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Clocks_Dependency
 
 extension Async.Stream.Timer {
     /// Namespace for timer with value.
@@ -40,10 +41,11 @@ extension Async.Stream.Timer.Value {
 extension Async.Stream.Timer.Value.State {
     @usableFromInline
     func next() async -> Element? {
+        @Dependency(\.clock) var clock
         if fired { return nil }
         if Task.isCancelled { return nil }
 
-        try? await Task.sleep(for: delay)
+        try? await clock.sleep(until: clock.now.advanced(by: delay))
         if Task.isCancelled { return nil }
 
         fired = true

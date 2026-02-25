@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Clocks_Dependency
 
 extension Async.Stream {
     /// Namespace for interval operations.
@@ -39,10 +40,11 @@ extension Async.Stream.Interval where Element == Int {
 extension Async.Stream.Interval.State {
     @usableFromInline
     func next() async -> Int? {
+        @Dependency(\.clock) var clock
         if Task.isCancelled { return nil }
 
         if started {
-            try? await Task.sleep(for: duration)
+            try? await clock.sleep(until: clock.now.advanced(by: duration))
             if Task.isCancelled { return nil }
         }
         started = true

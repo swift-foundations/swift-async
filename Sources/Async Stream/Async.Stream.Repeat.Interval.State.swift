@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Clocks_Dependency
 
 extension Async.Stream.Repeat {
     /// Namespace for repeat with interval.
@@ -44,6 +45,7 @@ extension Async.Stream.Repeat.Interval {
 extension Async.Stream.Repeat.Interval.State {
     @usableFromInline
     func next() async -> Element? {
+        @Dependency(\.clock) var clock
         if Task.isCancelled { return nil }
         if let r = remaining {
             if r <= 0 { return nil }
@@ -51,7 +53,7 @@ extension Async.Stream.Repeat.Interval.State {
         }
 
         if !first {
-            try? await Task.sleep(for: interval)
+            try? await clock.sleep(until: clock.now.advanced(by: interval))
             if Task.isCancelled { return nil }
         }
         first = false
