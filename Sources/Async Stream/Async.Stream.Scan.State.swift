@@ -31,7 +31,7 @@ extension Async.Stream.Scan {
         var state: Result
 
         @usableFromInline
-        init(stream: Async.Stream<Element>, initial: Result, accumulator: @escaping @Sendable (Result, Element) -> Result) {
+        init(stream: Async.Stream<Element>, initial: sending Result, accumulator: @escaping @Sendable (Result, Element) -> Result) {
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.state = initial
             self.accumulator = accumulator
@@ -64,11 +64,12 @@ extension Async.Stream {
     ///   - accumulator: A function to combine accumulator and element.
     /// - Returns: A stream of accumulated values.
     public func scan<Result: Sendable>(
-        _ initial: Result,
+        _ initial: sending Result,
         _ accumulator: @escaping @Sendable (Result, Element) -> Result
     ) -> Async.Stream<Result> {
-        Async.Stream<Result> { [self] in
-            let state = Async.Stream<Element>.Scan.State(stream: self, initial: initial, accumulator: accumulator)
+        let captured = initial
+        return Async.Stream<Result> { [self] in
+            let state = Async.Stream<Element>.Scan.State(stream: self, initial: captured, accumulator: accumulator)
             return Async.Stream<Result>.Iterator {
                 await state.next()
             }

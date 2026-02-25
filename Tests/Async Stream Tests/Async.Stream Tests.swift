@@ -12,11 +12,23 @@
 import Testing
 import Async
 
+// TEST-004: Async.Stream<Element> is generic — parallel namespace pattern
 @Suite("Async.Stream")
-struct StreamTests {
+struct AsyncStreamTests {
+    @Suite struct Unit {}
+    @Suite struct EdgeCase {}
+    @Suite struct Integration {}
+    @Suite(.serialized) struct Performance {}
+}
 
-    @Test("from sequence")
-    func fromSequence() async {
+// MARK: - Unit Tests
+
+extension AsyncStreamTests.Unit {
+
+    // MARK: Construction
+
+    @Test
+    func `from creates stream from sequence`() async {
         let stream = Async.Stream.from([1, 2, 3])
         var results: [Int] = []
 
@@ -27,8 +39,8 @@ struct StreamTests {
         #expect(results == [1, 2, 3])
     }
 
-    @Test("just emits single value")
-    func just() async {
+    @Test
+    func `just emits single value`() async {
         let stream = Async.Stream.just(42)
         var results: [Int] = []
 
@@ -39,8 +51,8 @@ struct StreamTests {
         #expect(results == [42])
     }
 
-    @Test("empty completes immediately")
-    func empty() async {
+    @Test
+    func `empty completes immediately`() async {
         let stream = Async.Stream<Int>.empty
         var count = 0
 
@@ -51,8 +63,26 @@ struct StreamTests {
         #expect(count == 0)
     }
 
-    @Test("map transforms elements")
-    func map() async {
+    @Test
+    func `unfold generates from state`() async {
+        let fib = Async.Stream.unfold((0, 1)) { state -> (Int, (Int, Int))? in
+            let value = state.0
+            if value > 5 { return nil }
+            return (value, (state.1, state.0 + state.1))
+        }
+
+        var results: [Int] = []
+        for await value in fib {
+            results.append(value)
+        }
+
+        #expect(results == [0, 1, 1, 2, 3, 5])
+    }
+
+    // MARK: Transformation
+
+    @Test
+    func `map transforms elements`() async {
         let stream = Async.Stream.from([1, 2, 3])
             .map { $0 * 2 }
 
@@ -64,8 +94,8 @@ struct StreamTests {
         #expect(results == [2, 4, 6])
     }
 
-    @Test("filter removes elements")
-    func filter() async {
+    @Test
+    func `filter removes elements`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5])
             .filter { $0 % 2 == 0 }
 
@@ -77,8 +107,8 @@ struct StreamTests {
         #expect(results == [2, 4])
     }
 
-    @Test("compactMap transforms and filters")
-    func compactMap() async {
+    @Test
+    func `compactMap transforms and filters`() async {
         let stream = Async.Stream.from(["1", "two", "3"])
             .compactMap { Int($0) }
 
@@ -90,8 +120,25 @@ struct StreamTests {
         #expect(results == [1, 3])
     }
 
-    @Test("scan accumulates")
-    func scan() async {
+    @Test
+    func `flatMap concatenates inner streams`() async {
+        let stream = Async.Stream.from([1, 2, 3])
+            .flatMap { n in
+                Async.Stream.from([n, n * 10])
+            }
+
+        var results: [Int] = []
+        for await value in stream {
+            results.append(value)
+        }
+
+        #expect(results == [1, 10, 2, 20, 3, 30])
+    }
+
+    // MARK: Accumulation
+
+    @Test
+    func `scan accumulates values`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5])
             .scan(0) { $0 + $1 }
 
@@ -103,16 +150,18 @@ struct StreamTests {
         #expect(results == [1, 3, 6, 10, 15])
     }
 
-    @Test("reduce to single value")
-    func reduce() async {
+    @Test
+    func `reduce to single value`() async {
         let sum = await Async.Stream.from([1, 2, 3, 4, 5])
             .reduce(0) { $0 + $1 }
 
         #expect(sum == 15)
     }
 
-    @Test("concat joins streams")
-    func concat() async {
+    // MARK: Combination
+
+    @Test
+    func `concat joins streams`() async {
         let a = Async.Stream.from([1, 2])
         let b = Async.Stream.from([3, 4])
         let stream = Async.Stream.concat(a, b)
@@ -125,8 +174,8 @@ struct StreamTests {
         #expect(results == [1, 2, 3, 4])
     }
 
-    @Test("zip pairs elements")
-    func zip() async {
+    @Test
+    func `zip pairs elements`() async {
         let a = Async.Stream.from([1, 2, 3])
         let b = Async.Stream.from(["a", "b", "c"])
         let stream = a.zip(b)
@@ -142,44 +191,10 @@ struct StreamTests {
         #expect(results[2].0 == 3 && results[2].1 == "c")
     }
 
-    @Test("flatMap concatenates inner streams")
-    func flatMap() async {
-        let stream = Async.Stream.from([1, 2, 3])
-            .flatMap { n in
-                Async.Stream.from([n, n * 10])
-            }
+    // MARK: Prefix
 
-        var results: [Int] = []
-        for await value in stream {
-            results.append(value)
-        }
-
-        #expect(results == [1, 10, 2, 20, 3, 30])
-    }
-
-    // MARK: - Unfold
-
-    @Test("unfold generates from state")
-    func unfold() async {
-        // Fibonacci: generate first 6 numbers
-        let fib = Async.Stream.unfold((0, 1)) { state -> (Int, (Int, Int))? in
-            let value = state.0
-            if value > 5 { return nil }
-            return (value, (state.1, state.0 + state.1))
-        }
-
-        var results: [Int] = []
-        for await value in fib {
-            results.append(value)
-        }
-
-        #expect(results == [0, 1, 1, 2, 3, 5])
-    }
-
-    // MARK: - Prefix
-
-    @Test("prefix takes first N elements")
-    func prefixCount() async {
+    @Test
+    func `prefix takes first N elements`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).prefix(3)
 
         var results: [Int] = []
@@ -190,8 +205,8 @@ struct StreamTests {
         #expect(results == [1, 2, 3])
     }
 
-    @Test("prefix while takes until predicate fails")
-    func prefixWhile() async {
+    @Test
+    func `prefix while takes until predicate fails`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).prefix.while { $0 < 4 }
 
         var results: [Int] = []
@@ -202,10 +217,10 @@ struct StreamTests {
         #expect(results == [1, 2, 3])
     }
 
-    // MARK: - Drop
+    // MARK: Drop
 
-    @Test("drop skips first N elements")
-    func dropCount() async {
+    @Test
+    func `drop skips first N elements`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).drop(2)
 
         var results: [Int] = []
@@ -216,8 +231,8 @@ struct StreamTests {
         #expect(results == [3, 4, 5])
     }
 
-    @Test("drop while skips until predicate fails")
-    func dropWhile() async {
+    @Test
+    func `drop while skips until predicate fails`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).drop.while { $0 < 3 }
 
         var results: [Int] = []
@@ -228,10 +243,10 @@ struct StreamTests {
         #expect(results == [3, 4, 5])
     }
 
-    // MARK: - First/Last
+    // MARK: Selection
 
-    @Test("first returns only first element")
-    func firstElement() async {
+    @Test
+    func `first returns only first element`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).first()
 
         var results: [Int] = []
@@ -242,8 +257,8 @@ struct StreamTests {
         #expect(results == [1])
     }
 
-    @Test("last returns only last element")
-    func lastElement() async {
+    @Test
+    func `last returns only last element`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).last()
 
         var results: [Int] = []
@@ -254,10 +269,10 @@ struct StreamTests {
         #expect(results == [5])
     }
 
-    // MARK: - DistinctUntilChanged
+    // MARK: Deduplication
 
-    @Test("distinctUntilChanged removes consecutive duplicates")
-    func distinctUntilChanged() async {
+    @Test
+    func `distinctUntilChanged removes consecutive duplicates`() async {
         let stream = Async.Stream.from([1, 1, 2, 2, 2, 3, 1, 1]).distinctUntilChanged()
 
         var results: [Int] = []
@@ -268,8 +283,8 @@ struct StreamTests {
         #expect(results == [1, 2, 3, 1])
     }
 
-    @Test("distinctUntilChanged by key")
-    func distinctUntilChangedByKey() async {
+    @Test
+    func `distinctUntilChanged by key`() async {
         let stream = Async.Stream.from([1, -1, 2, -2, 3])
             .distinctUntilChanged { abs($0) }
 

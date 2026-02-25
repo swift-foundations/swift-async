@@ -27,7 +27,7 @@ extension Async.Stream.Unfold {
         let nextFn: @Sendable (S) async -> (Element, S)?
 
         @usableFromInline
-        init(initial: S, next: @escaping @Sendable (S) async -> (Element, S)?) {
+        init(initial: sending S, next: @escaping @Sendable (S) async -> (Element, S)?) {
             self.state = initial
             self.nextFn = next
         }
@@ -65,11 +65,12 @@ extension Async.Stream {
     ///   - next: A function that produces an element and next state, or nil to complete.
     /// - Returns: A stream of unfolded elements.
     public static func unfold<State: Sendable>(
-        _ initial: State,
+        _ initial: sending State,
         _ next: @escaping @Sendable (State) async -> (Element, State)?
     ) -> Self {
-        Self {
-            let state = Async.Stream<Element>.Unfold.State(initial: initial, next: next)
+        let captured = initial
+        return Self {
+            let state = Async.Stream<Element>.Unfold.State(initial: captured, next: next)
             return Iterator {
                 await state.next()
             }

@@ -113,21 +113,21 @@ extension Async.Stream {
         Self { Iterator { nil } }
     }
 
-    /// Creates a stream that never emits and never completes.
+    /// Creates a stream that never emits.
     ///
-    /// Useful as a placeholder or for testing.
+    /// Suspends indefinitely until the consuming task is cancelled,
+    /// at which point the stream completes by returning `nil`.
     ///
     /// ## Usage
     /// ```swift
     /// let never = Async.Stream<Int>.never
-    /// // Awaiting will suspend forever
+    /// // Suspends until cancelled
     /// ```
     public static var never: Self {
         Self {
             Iterator {
-                await withCheckedContinuation { (_: CheckedContinuation<Element?, Never>) in
-                    // Never resume - stream hangs forever
-                }
+                try? await Task.sleep(for: .seconds(Int64.max))
+                return nil
             }
         }
     }
