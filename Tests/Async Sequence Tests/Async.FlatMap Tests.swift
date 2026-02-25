@@ -95,4 +95,14 @@ struct AsyncFlatMapTests {
         #expect(results == [10, 20, 30])
     }
 
+    // MARK: - Type Identity
+
+    @Test
+    func `sync closure returns concrete Async.FlatMap type`() async {
+        let source = Produce([1, 2, 3])
+        let flat = source.flatMap { Produce([$0]) }
+
+        #expect(flat is Async.FlatMap<Produce<Int>, Produce<Int>>)
+    }
+
 }

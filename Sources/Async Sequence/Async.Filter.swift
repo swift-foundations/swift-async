@@ -23,12 +23,18 @@ extension Async {
         let base: Base
 
         @usableFromInline
-        let isIncluded: (Base.Element) async -> Bool
+        let predicate: Predicate
 
         @usableFromInline
-        init(base: Base, isIncluded: @escaping (Base.Element) async -> Bool) {
+        enum Predicate {
+            case sync((Base.Element) -> Bool)
+            case async((Base.Element) async -> Bool)
+        }
+
+        @usableFromInline
+        init(base: Base, predicate: Predicate) {
             self.base = base
-            self.isIncluded = isIncluded
+            self.predicate = predicate
         }
 
         public struct Iterator: AsyncIteratorProtocol {
@@ -36,21 +42,28 @@ extension Async {
             var baseIterator: Base.AsyncIterator
 
             @usableFromInline
-            let isIncluded: (Base.Element) async -> Bool
+            let predicate: Predicate
 
             @usableFromInline
             init(
                 baseIterator: Base.AsyncIterator,
-                isIncluded: @escaping (Base.Element) async -> Bool
+                predicate: Predicate
             ) {
                 self.baseIterator = baseIterator
-                self.isIncluded = isIncluded
+                self.predicate = predicate
             }
 
             @inlinable
-            public mutating func next() async -> Base.Element? {
-                while let element = try? await baseIterator.next(isolation: #isolation) {
-                    if await isIncluded(element) {
+            public mutating func next(
+                isolation actor: isolated (any Actor)? = #isolation
+            ) async -> Base.Element? {
+                while let element = try? await baseIterator.next(isolation: actor) {
+                    let included: Bool
+                    switch predicate {
+                    case .sync(let f): included = f(element)
+                    case .async(let f): included = await f(element)
+                    }
+                    if included {
                         return element
                     }
                 }
@@ -60,7 +73,7 @@ extension Async {
 
         @inlinable
         public func makeAsyncIterator() -> Iterator {
-            Iterator(baseIterator: base.makeAsyncIterator(), isIncluded: isIncluded)
+            Iterator(baseIterator: base.makeAsyncIterator(), predicate: predicate)
         }
     }
 }

@@ -73,4 +73,14 @@ struct AsyncMapTests {
         #expect(results == [6, 8, 10])
     }
 
+    // MARK: - Type Identity
+
+    @Test
+    func `sync closure returns concrete Async.Map type`() async {
+        let source = Produce([1, 2, 3])
+        let mapped = source.map { $0 * 2 }
+
+        #expect(mapped is Async.Map<Produce<Int>, Int>)
+    }
+
 }

@@ -24,10 +24,16 @@ extension Async {
         let base: Base
 
         @usableFromInline
-        let transform: (Base.Element) async -> Segment
+        let transform: Transform
 
         @usableFromInline
-        init(base: Base, transform: @escaping (Base.Element) async -> Segment) {
+        enum Transform {
+            case sync((Base.Element) -> Segment)
+            case async((Base.Element) async -> Segment)
+        }
+
+        @usableFromInline
+        init(base: Base, transform: Transform) {
             self.base = base
             self.transform = transform
         }
@@ -37,7 +43,7 @@ extension Async {
             var baseIterator: Base.AsyncIterator
 
             @usableFromInline
-            let transform: (Base.Element) async -> Segment
+            let transform: Transform
 
             @usableFromInline
             var currentIterator: Segment.AsyncIterator?
@@ -45,7 +51,7 @@ extension Async {
             @usableFromInline
             init(
                 baseIterator: Base.AsyncIterator,
-                transform: @escaping (Base.Element) async -> Segment
+                transform: Transform
             ) {
                 self.baseIterator = baseIterator
                 self.transform = transform
@@ -53,21 +59,27 @@ extension Async {
             }
 
             @inlinable
-            public mutating func next() async -> Segment.Element? {
+            public mutating func next(
+                isolation actor: isolated (any Actor)? = #isolation
+            ) async -> Segment.Element? {
                 while true {
                     if var inner = currentIterator {
-                        if let element = try? await inner.next(isolation: #isolation) {
+                        if let element = try? await inner.next(isolation: actor) {
                             currentIterator = inner
                             return element
                         }
                         currentIterator = nil
                     }
 
-                    guard let base = try? await baseIterator.next(isolation: #isolation) else {
+                    guard let base = try? await baseIterator.next(isolation: actor) else {
                         return nil
                     }
 
-                    let segment = await transform(base)
+                    let segment: Segment
+                    switch transform {
+                    case .sync(let f): segment = f(base)
+                    case .async(let f): segment = await f(base)
+                    }
                     currentIterator = segment.makeAsyncIterator()
                 }
             }

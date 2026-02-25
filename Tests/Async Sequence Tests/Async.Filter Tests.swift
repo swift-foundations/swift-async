@@ -85,4 +85,14 @@ struct AsyncFilterTests {
         #expect(results == [5, 3, 1])
     }
 
+    // MARK: - Type Identity
+
+    @Test
+    func `sync closure returns concrete Async.Filter type`() async {
+        let source = Produce([1, 2, 3])
+        let filtered = source.filter { $0 > 1 }
+
+        #expect(filtered is Async.Filter<Produce<Int>>)
+    }
+
 }

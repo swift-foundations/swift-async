@@ -87,4 +87,14 @@ struct AsyncCompactMapTests {
         #expect(results == [100, 300])
     }
 
+    // MARK: - Type Identity
+
+    @Test
+    func `sync closure returns concrete Async.CompactMap type`() async {
+        let source = Produce(["1", "two", "3"])
+        let compacted = source.compactMap { Int($0) }
+
+        #expect(compacted is Async.CompactMap<Produce<String>, Int>)
+    }
+
 }

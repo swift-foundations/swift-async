@@ -23,10 +23,16 @@ extension Async {
         let base: Base
 
         @usableFromInline
-        let transform: (Base.Element) async -> Output?
+        let transform: Transform
 
         @usableFromInline
-        init(base: Base, transform: @escaping (Base.Element) async -> Output?) {
+        enum Transform {
+            case sync((Base.Element) -> Output?)
+            case async((Base.Element) async -> Output?)
+        }
+
+        @usableFromInline
+        init(base: Base, transform: Transform) {
             self.base = base
             self.transform = transform
         }
@@ -36,21 +42,28 @@ extension Async {
             var baseIterator: Base.AsyncIterator
 
             @usableFromInline
-            let transform: (Base.Element) async -> Output?
+            let transform: Transform
 
             @usableFromInline
             init(
                 baseIterator: Base.AsyncIterator,
-                transform: @escaping (Base.Element) async -> Output?
+                transform: Transform
             ) {
                 self.baseIterator = baseIterator
                 self.transform = transform
             }
 
             @inlinable
-            public mutating func next() async -> Output? {
-                while let element = try? await baseIterator.next(isolation: #isolation) {
-                    if let output = await transform(element) {
+            public mutating func next(
+                isolation actor: isolated (any Actor)? = #isolation
+            ) async -> Output? {
+                while let element = try? await baseIterator.next(isolation: actor) {
+                    let result: Output?
+                    switch transform {
+                    case .sync(let f): result = f(element)
+                    case .async(let f): result = await f(element)
+                    }
+                    if let output = result {
                         return output
                     }
                 }
