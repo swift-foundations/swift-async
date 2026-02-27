@@ -29,7 +29,7 @@ let package = Package(
         .package(path: "../../swift-primitives/swift-async-primitives"),
         .package(path: "../../swift-primitives/swift-buffer-primitives"),
         .package(path: "../../swift-primitives/swift-reference-primitives"),
-        .package(path: "../swift-dependencies/integration/swift-clocks-dependency"),
+        .package(path: "../swift-dependencies", traits: ["Clocks"]),
     ],
     targets: [
         .target(
@@ -43,7 +43,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
-                .product(name: "Clocks Dependency", package: "swift-clocks-dependency"),
+                .product(name: "Clocks Dependency", package: "swift-dependencies"),
                 .product(name: "Reference Primitives", package: "swift-reference-primitives"),
             ]
         ),
@@ -65,7 +65,7 @@ let package = Package(
             name: "Async Stream Tests",
             dependencies: [
                 "Async",
-                .product(name: "Clocks Dependency", package: "swift-clocks-dependency"),
+                .product(name: "Clocks Dependency", package: "swift-dependencies"),
             ]
         )
     ],
