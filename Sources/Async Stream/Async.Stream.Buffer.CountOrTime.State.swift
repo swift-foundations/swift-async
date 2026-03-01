@@ -52,7 +52,7 @@ extension Async.Stream.Buffer.CountOrTime.State {
             return nil
         }
 
-        let deadline = ContinuousClock.now + duration
+        let deadline = Clock.Continuous.now + duration
 
         while true {
             // Check count first
@@ -71,7 +71,7 @@ extension Async.Stream.Buffer.CountOrTime.State {
                 return nil
             }
 
-            let remaining = deadline - ContinuousClock.now
+            let remaining = deadline - Clock.Continuous.now
             if remaining <= .zero {
                 // Time window expired
                 let result = buffer
