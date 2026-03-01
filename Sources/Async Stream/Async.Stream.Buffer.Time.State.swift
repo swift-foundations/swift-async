@@ -11,6 +11,7 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
+public import Clocks
 
 extension Async.Stream.Buffer.Time {
     /// Internal state for time-based buffering.

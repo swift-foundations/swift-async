@@ -29,6 +29,7 @@ let package = Package(
         .package(path: "../../swift-primitives/swift-async-primitives"),
         .package(path: "../../swift-primitives/swift-buffer-primitives"),
         .package(path: "../../swift-primitives/swift-reference-primitives"),
+        .package(path: "../swift-clocks"),
         .package(path: "../swift-dependencies", traits: ["Clocks"]),
     ],
     targets: [
@@ -43,6 +44,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
+                .product(name: "Clocks", package: "swift-clocks"),
                 .product(name: "Clocks Dependency", package: "swift-dependencies"),
                 .product(name: "Reference Primitives", package: "swift-reference-primitives"),
             ]
