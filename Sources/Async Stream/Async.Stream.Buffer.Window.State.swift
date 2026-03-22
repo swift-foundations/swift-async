@@ -14,7 +14,7 @@ public import Ownership_Primitives
 public import Clocks
 internal import Clocks_Dependency
 
-extension Async.Stream.Buffer.Bounded {
+extension Async.Stream.Buffer.Window {
     /// Internal state for count-or-time buffering.
     @usableFromInline
     actor State {
@@ -28,7 +28,10 @@ extension Async.Stream.Buffer.Bounded {
         let duration: Duration
 
         @usableFromInline
-        var buffer: [Element] = []
+        var queue: Queue<Element> = .init()
+
+        @usableFromInline
+        var elementCount: Int = 0
 
         @usableFromInline
         var upstreamDone: Bool = false
@@ -42,12 +45,12 @@ extension Async.Stream.Buffer.Bounded {
     }
 }
 
-extension Async.Stream.Buffer.Bounded.State {
+extension Async.Stream.Buffer.Window.State {
     @usableFromInline
     func next() async -> [Element]? {
         @Dependency(\.clock) var clock
         let resolvedClock = clock
-        if upstreamDone && buffer.isEmpty {
+        if upstreamDone && queue.isEmpty {
             return nil
         }
 
@@ -55,16 +58,21 @@ extension Async.Stream.Buffer.Bounded.State {
 
         while true {
             // Check count first
-            if buffer.count >= count {
-                let result = Array(buffer.prefix(count))
-                buffer.removeFirst(min(count, buffer.count))
+            if elementCount >= count {
+                var result: [Element] = []
+                for _ in 0..<count {
+                    guard let element = queue.dequeue() else { break }
+                    result.append(element)
+                }
+                elementCount -= result.count
                 return result
             }
 
             if upstreamDone {
-                if !buffer.isEmpty {
-                    let result = buffer
-                    buffer = []
+                if !queue.isEmpty {
+                    var result: [Element] = []
+                    queue.drain { result.append($0) }
+                    elementCount = 0
                     return result
                 }
                 return nil
@@ -74,8 +82,9 @@ extension Async.Stream.Buffer.Bounded.State {
             let remaining = now.duration(to: deadline)
             if remaining <= .zero {
                 // Time window expired
-                let result = buffer
-                buffer = []
+                var result: [Element] = []
+                queue.drain { result.append($0) }
+                elementCount = 0
                 if result.isEmpty {
                     continue // Start new window
                 }
@@ -106,12 +115,14 @@ extension Async.Stream.Buffer.Bounded.State {
 
             switch result {
             case .element(let element):
-                buffer.append(element)
+                queue.enqueue(element)
+                elementCount += 1
 
             case .timerExpired:
-                if !buffer.isEmpty {
-                    let result = buffer
-                    buffer = []
+                if !queue.isEmpty {
+                    var result: [Element] = []
+                    queue.drain { result.append($0) }
+                    elementCount = 0
                     return result
                 }
                 // Empty buffer, start new window

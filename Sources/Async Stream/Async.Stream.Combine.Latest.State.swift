@@ -22,7 +22,7 @@ extension Async.Stream.Combine {
         var latestB: B?
 
         @usableFromInline
-        var buffer: [(A, B)] = []
+        var queue: Queue<(A, B)> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<(A, B)?, Never>?
@@ -59,7 +59,7 @@ extension Async.Stream.Combine.State {
             continuation = nil
             cont.resume(returning: (a, b))
         } else {
-            buffer.append((a, b))
+            queue.enqueue((a, b))
         }
     }
 
@@ -85,8 +85,8 @@ extension Async.Stream.Combine.State {
 
     @usableFromInline
     func receive() async -> (A, B)? {
-        if !buffer.isEmpty {
-            return buffer.removeFirst()
+        if !queue.isEmpty {
+            return queue.dequeue()!
         }
 
         if aComplete && bComplete {

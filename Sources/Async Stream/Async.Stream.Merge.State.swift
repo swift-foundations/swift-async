@@ -16,7 +16,7 @@ extension Async.Stream.Merge {
     @usableFromInline
     actor State {
         @usableFromInline
-        var buffer: [Element] = []
+        var queue: Queue<Element> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?
@@ -39,7 +39,7 @@ extension Async.Stream.Merge.State {
             continuation = nil
             cont.resume(returning: element)
         } else {
-            buffer.append(element)
+            queue.enqueue(element)
         }
     }
 
@@ -54,8 +54,8 @@ extension Async.Stream.Merge.State {
 
     @usableFromInline
     func receive() async -> Element? {
-        if !buffer.isEmpty {
-            return buffer.removeFirst()
+        if !queue.isEmpty {
+            return queue.dequeue()!
         }
 
         if completed >= streamCount {

@@ -13,5 +13,5 @@ public import Async_Primitives
 
 extension Async.Stream.Buffer {
     /// Namespace for count-or-time buffering.
-    public enum Bounded {}
+    public enum Window {}
 }

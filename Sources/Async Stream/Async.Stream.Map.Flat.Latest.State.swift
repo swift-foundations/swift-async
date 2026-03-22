@@ -31,7 +31,7 @@ extension Async.Stream.Map.Flat.Latest {
         var innerTask: Task<Void, Never>?
 
         @usableFromInline
-        var innerValues: [U] = []
+        var queue: Queue<U> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<U?, Never>?
@@ -61,8 +61,8 @@ extension Async.Stream.Map.Flat.Latest.State {
     func next() async -> U? {
         while true {
             // Return buffered inner value if available
-            if !innerValues.isEmpty {
-                return innerValues.removeFirst()
+            if !queue.isEmpty {
+                return queue.dequeue()!
             }
 
             // If inner is done and outer is done, we're complete
@@ -108,7 +108,7 @@ extension Async.Stream.Map.Flat.Latest.State {
             continuation = nil
             cont.resume(returning: element)
         } else {
-            innerValues.append(element)
+            queue.enqueue(element)
         }
     }
 

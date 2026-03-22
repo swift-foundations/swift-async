@@ -25,7 +25,7 @@ extension Async.Stream.Buffer.Time {
         let duration: Duration
 
         @usableFromInline
-        var buffer: [Element] = []
+        var queue: Queue<Element> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false
@@ -54,8 +54,8 @@ extension Async.Stream.Buffer.Time.State {
             let remaining = now.duration(to: deadline)
             if remaining <= .zero {
                 // Time window expired
-                let result = buffer
-                buffer = []
+                var result: [Element] = []
+                queue.drain { result.append($0) }
                 if result.isEmpty && upstreamDone {
                     return nil
                 }
@@ -86,18 +86,18 @@ extension Async.Stream.Buffer.Time.State {
 
             switch result {
             case .element(let element):
-                buffer.append(element)
+                queue.enqueue(element)
 
             case .timerExpired:
-                let result = buffer
-                buffer = []
+                var result: [Element] = []
+                queue.drain { result.append($0) }
                 return result
 
             case .upstreamComplete:
                 upstreamDone = true
-                if !buffer.isEmpty {
-                    let result = buffer
-                    buffer = []
+                if !queue.isEmpty {
+                    var result: [Element] = []
+                    queue.drain { result.append($0) }
                     return result
                 }
                 return nil

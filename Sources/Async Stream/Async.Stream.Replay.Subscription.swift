@@ -16,7 +16,7 @@ extension Async.Stream.Replay {
     @usableFromInline
     actor Subscription {
         @usableFromInline
-        var buffer: [Element]
+        var queue: Queue<Element>
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?
@@ -26,7 +26,8 @@ extension Async.Stream.Replay {
 
         @usableFromInline
         init(replay: [Element], finished: Bool) {
-            self.buffer = replay
+            self.queue = .init()
+            for element in replay { self.queue.enqueue(element) }
             self.finished = finished
         }
     }
@@ -44,7 +45,7 @@ extension Async.Stream.Replay.Subscription {
             continuation = nil
             cont.resume(returning: element)
         } else {
-            buffer.append(element)
+            queue.enqueue(element)
         }
     }
 
@@ -64,8 +65,8 @@ extension Async.Stream.Replay.Subscription {
 
     @usableFromInline
     func next() async -> Element? {
-        if !buffer.isEmpty {
-            return buffer.removeFirst()
+        if !queue.isEmpty {
+            return queue.dequeue()!
         }
 
         if finished {

@@ -22,7 +22,7 @@ extension Async.Stream.Transducer {
         var state: State
 
         @usableFromInline
-        var pendingOutputs: [Output] = []
+        var queue: Queue<Output> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false
@@ -43,8 +43,8 @@ extension Async.Stream.Transducer.Run {
     @inlinable
     func next() async -> Output? {
         // Return pending outputs first
-        if !pendingOutputs.isEmpty {
-            return pendingOutputs.removeFirst()
+        if !queue.isEmpty {
+            return queue.dequeue()!
         }
 
         // Step more input
@@ -54,7 +54,7 @@ extension Async.Stream.Transducer.Run {
                 // Complete - flush remaining
                 let finals = transducer.complete(&state)
                 if !finals.isEmpty {
-                    pendingOutputs = Array(finals.dropFirst())
+                    for output in finals.dropFirst() { queue.enqueue(output) }
                     return finals.first
                 }
                 return nil
@@ -62,7 +62,7 @@ extension Async.Stream.Transducer.Run {
 
             let outputs = transducer.step(element, &state)
             if !outputs.isEmpty {
-                pendingOutputs = Array(outputs.dropFirst())
+                for output in outputs.dropFirst() { queue.enqueue(output) }
                 return outputs.first
             }
         }
