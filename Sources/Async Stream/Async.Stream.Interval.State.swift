@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Clocks_Dependency
+internal import Clocks_Dependency
 
 extension Async.Stream {
     /// Namespace for interval operations.

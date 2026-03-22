@@ -11,7 +11,7 @@
 
 public import Async_Primitives
 public import Clock_Primitives
-public import Clocks_Dependency
+internal import Clocks_Dependency
 public import Ownership_Primitives
 
 extension Async.Stream {

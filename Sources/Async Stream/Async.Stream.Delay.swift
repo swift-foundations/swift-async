@@ -10,8 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Clocks_Dependency
-public import Ownership_Primitives
+internal import Clocks_Dependency
+internal import Ownership_Primitives
 
 // MARK: - Delay
 

@@ -11,8 +11,8 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
-public import Buffer_Primitives
-public import Cardinal_Primitives
+internal import Buffer_Primitives
+internal import Cardinal_Primitives
 
 extension Async.Stream.Buffer {
     /// Namespace for count-based buffering.

@@ -50,6 +50,9 @@ let package = Package(
             name: "Async Stream Core",
             dependencies: [
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
+                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
+                .product(name: "Clocks", package: "swift-clocks"),
+                .product(name: "Reference Primitives", package: "swift-reference-primitives"),
             ]
         ),
 
@@ -59,10 +62,7 @@ let package = Package(
             name: "Async Stream",
             dependencies: [
                 "Async Stream Core",
-                .product(name: "Async Primitives", package: "swift-async-primitives"),
-                .product(name: "Clocks", package: "swift-clocks"),
                 .product(name: "Clocks Dependency", package: "swift-dependencies"),
-                .product(name: "Reference Primitives", package: "swift-reference-primitives"),
             ]
         ),
 
@@ -72,15 +72,11 @@ let package = Package(
             name: "Async Stream Buffering",
             dependencies: [
                 "Async Stream Core",
-                .product(name: "Async Primitives", package: "swift-async-primitives"),
-                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
-                .product(name: "Clocks", package: "swift-clocks"),
             ]
         ),
         .target(
             name: "Async",
             dependencies: [
-                .product(name: "Async Primitives", package: "swift-async-primitives"),
                 "Async Sequence",
                 "Async Stream",
                 "Async Stream Buffering",
