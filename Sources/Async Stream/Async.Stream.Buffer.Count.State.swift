@@ -14,11 +14,6 @@ public import Ownership_Primitives
 internal import Buffer_Primitives
 internal import Cardinal_Primitives
 
-extension Async.Stream.Buffer {
-    /// Namespace for count-based buffering.
-    public enum Count {}
-}
-
 extension Async.Stream.Buffer.Count {
     /// Internal state for count-based buffering.
     @usableFromInline

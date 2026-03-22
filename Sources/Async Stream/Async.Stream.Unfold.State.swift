@@ -11,29 +11,30 @@
 
 public import Async_Primitives
 
-extension Async.Stream.Replay {
-    /// Wrapper that lazily subscribes to replay state.
+extension Async.Stream.Unfold {
+    /// Internal state for unfold stream.
     @usableFromInline
-    actor IteratorWrapper {
+    actor State<S: Sendable> {
         @usableFromInline
-        let state: Async.Stream<Element>.Replay.State
+        var state: S
 
         @usableFromInline
-        var subscription: Async.Stream<Element>.Replay.Subscription?
+        let nextFn: @Sendable (S) async -> (Element, S)?
 
         @usableFromInline
-        init(state: Async.Stream<Element>.Replay.State) {
-            self.state = state
+        init(initial: sending S, next: @escaping @Sendable (S) async -> (Element, S)?) {
+            self.state = initial
+            self.nextFn = next
         }
     }
 }
 
-extension Async.Stream.Replay.IteratorWrapper {
+extension Async.Stream.Unfold.State {
     @usableFromInline
     func next() async -> Element? {
-        if subscription == nil {
-            subscription = await state.subscribe()
-        }
-        return await subscription!.next()
+        if Task.isCancelled { return nil }
+        guard let (element, newState) = await self.nextFn(state) else { return nil }
+        state = newState
+        return element
     }
 }

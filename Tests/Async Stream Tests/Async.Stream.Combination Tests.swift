@@ -163,7 +163,7 @@ extension AsyncStreamTests.Unit {
         // Since outer elements arrive instantly, each new one cancels the previous
         // The last outer element (3) should produce its full inner stream
         let stream = Async.Stream.from([1, 2, 3])
-            .flatMapLatest { n in
+            .map.flat.latest { n in
                 Async.Stream.from([n, n * 10])
             }
 
@@ -180,7 +180,7 @@ extension AsyncStreamTests.Unit {
     @Test
     func `flatMapLatest with single element`() async {
         let stream = Async.Stream.from([42])
-            .flatMapLatest { n in
+            .map.flat.latest { n in
                 Async.Stream.from([n, n * 2])
             }
 

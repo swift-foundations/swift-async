@@ -12,20 +12,20 @@
 public import Async_Primitives
 public import Ownership_Primitives
 
-extension Async.Stream.FlatMap {
-    /// Namespace for flatMapLatest operations.
+extension Async.Stream.Map.Flat {
+    /// Namespace for latest operations.
     public enum Latest {}
 }
 
-extension Async.Stream.FlatMap.Latest {
-    /// Internal state for flatMapLatest.
+extension Async.Stream.Map.Flat.Latest {
+    /// Internal state for flat map latest.
     @usableFromInline
     actor State<U: Sendable> {
         @usableFromInline
-        let outerBox: _Async.Stream<Element>.Iterator.Box<_Async.Stream<Element>.Iterator>
+        let outerBox: Async.Stream<Element>.Iterator.Box<Async.Stream<Element>.Iterator>
 
         @usableFromInline
-        let transform: @Sendable (Element) -> _Async.Stream<U>
+        let transform: Transform
 
         @usableFromInline
         var innerTask: Task<Void, Never>?
@@ -43,14 +43,20 @@ extension Async.Stream.FlatMap.Latest {
         var innerDone: Bool = true
 
         @usableFromInline
-        init(stream: _Async.Stream<Element>, transform: @escaping @Sendable (Element) -> _Async.Stream<U>) {
-            self.outerBox = _Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
+        enum Transform {
+            case sync(@Sendable (Element) -> Async.Stream<U>)
+            case async(@Sendable (Element) async -> Async.Stream<U>)
+        }
+
+        @usableFromInline
+        init(stream: Async.Stream<Element>, transform: Transform) {
+            self.outerBox = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.transform = transform
         }
     }
 }
 
-extension Async.Stream.FlatMap.Latest.State {
+extension Async.Stream.Map.Flat.Latest.State {
     @usableFromInline
     func next() async -> U? {
         while true {
@@ -76,7 +82,11 @@ extension Async.Stream.FlatMap.Latest.State {
                 innerDone = false
 
                 // Start new inner stream
-                let innerStream = transform(outerElement)
+                let innerStream: Async.Stream<U>
+                switch transform {
+                case .sync(let f): innerStream = f(outerElement)
+                case .async(let f): innerStream = await f(outerElement)
+                }
                 innerTask = Task {
                     for await innerElement in innerStream {
                         await self.receiveInner(innerElement)
@@ -109,36 +119,6 @@ extension Async.Stream.FlatMap.Latest.State {
             continuation = nil
             // Resume to re-check state
             cont.resume(returning: nil)
-        }
-    }
-}
-
-// MARK: - FlatMapLatest Method (sync)
-
-extension Async.Stream {
-    /// Transforms each element into a stream, cancelling previous inner streams.
-    ///
-    /// Unlike `flatMap` which concatenates all inner streams, `flatMapLatest`
-    /// cancels the current inner stream when a new outer element arrives.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let results = searchText.flatMapLatest { query in
-    ///     Async.Stream.from(search(query))
-    /// }
-    /// // New search cancels previous in-flight search
-    /// ```
-    ///
-    /// - Parameter transform: A function that returns a stream for each element.
-    /// - Returns: A stream from the latest inner stream.
-    public func flatMapLatest<U: Sendable>(
-        _ transform: @escaping @Sendable (Element) -> Async.Stream<U>
-    ) -> Async.Stream<U> {
-        Async.Stream<U> { [self] in
-            let state = Async.Stream<Element>.FlatMap.Latest.State<U>(stream: self, transform: transform)
-            return Async.Stream<U>.Iterator {
-                await state.next()
-            }
         }
     }
 }

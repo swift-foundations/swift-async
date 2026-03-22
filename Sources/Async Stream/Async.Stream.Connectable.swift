@@ -69,10 +69,8 @@ extension Async.Stream.Connectable {
         }
     }
 
-    /// Creates a stream from this connectable.
-    ///
-    /// - Returns: A stream that receives elements once connected.
-    public func asStream() -> Async.Stream<Element> {
+    /// A stream that receives elements once connected.
+    public var stream: Async.Stream<Element> {
         Async.Stream<Element> {
             let subscription = broadcast.subscribe()
             let box = Async.Stream<Element>.Iterator.Box(subscription.makeAsyncIterator())

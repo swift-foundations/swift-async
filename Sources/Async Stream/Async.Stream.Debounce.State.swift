@@ -11,6 +11,7 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
+internal import Clocks_Dependency
 
 extension Async.Stream.Debounce {
     /// Internal state for debounce.
@@ -39,6 +40,8 @@ extension Async.Stream.Debounce {
 extension Async.Stream.Debounce.State {
     @usableFromInline
     func next() async -> Element? {
+        @Dependency(\.clock) var clock
+        let resolvedClock = clock
         if upstreamDone {
             // Emit any pending element
             if let element = pending {
@@ -61,7 +64,7 @@ extension Async.Stream.Debounce.State {
 
                 if self.pending != nil {
                     group.addTask {
-                        try? await Task.sleep(for: self.duration)
+                        try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: self.duration))
                         return .timerExpired
                     }
                 }
@@ -96,33 +99,6 @@ extension Async.Stream.Debounce.State {
                     return element
                 }
                 return nil
-            }
-        }
-    }
-}
-
-// MARK: - Debounce Method
-
-extension Async.Stream {
-    /// Emits only after a quiet period with no new elements.
-    ///
-    /// When an element arrives, starts a timer. If another element arrives
-    /// before the timer expires, restarts the timer. Only emits when the
-    /// timer expires without interruption.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let debounced = searchText.debounce(.milliseconds(300))
-    /// // Only emits after 300ms of no typing
-    /// ```
-    ///
-    /// - Parameter duration: The quiet period to wait.
-    /// - Returns: A debounced stream.
-    public func debounce(_ duration: Duration) -> Self {
-        Self { [self] in
-            let state = Async.Stream<Element>.Debounce.State(stream: self, duration: duration)
-            return Iterator {
-                await state.next()
             }
         }
     }

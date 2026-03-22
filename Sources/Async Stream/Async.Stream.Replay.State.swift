@@ -10,16 +10,15 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Buffer_Primitives
+internal import Cardinal_Primitives
 
 extension Async.Stream.Replay {
     /// Internal state for replay.
     @usableFromInline
     actor State {
         @usableFromInline
-        var buffer: [Element] = []
-
-        @usableFromInline
-        let bufferSize: Int
+        var ring: Buffer<Element>.Ring.Bounded
 
         @usableFromInline
         var subscriptions: [Async.Stream<Element>.Replay.Subscription] = []
@@ -29,7 +28,8 @@ extension Async.Stream.Replay {
 
         @usableFromInline
         init(bufferSize: Int) {
-            self.bufferSize = max(0, bufferSize)
+            let capacity = try! Index<Element>.Count(max(1, bufferSize))
+            self.ring = Buffer<Element>.Ring.Bounded(minimumCapacity: capacity)
         }
     }
 }
@@ -37,11 +37,11 @@ extension Async.Stream.Replay {
 extension Async.Stream.Replay.State {
     @usableFromInline
     func send(_ element: sending Element) {
-        // Add to buffer
-        buffer.append(element)
-        if buffer.count > bufferSize {
-            buffer.removeFirst()
+        // Evict oldest if at capacity
+        if ring.isFull {
+            _ = ring.pop.front()
         }
+        ring.push.back(element)
 
         // Forward to all subscriptions
         for subscription in subscriptions {
@@ -59,7 +59,9 @@ extension Async.Stream.Replay.State {
 
     @usableFromInline
     func subscribe() -> Async.Stream<Element>.Replay.Subscription {
-        let subscription = Async.Stream<Element>.Replay.Subscription(replay: buffer, finished: finished)
+        var replay: [Element] = []
+        ring.forEach { replay.append($0) }
+        let subscription = Async.Stream<Element>.Replay.Subscription(replay: replay, finished: finished)
         if !finished {
             subscriptions.append(subscription)
         }

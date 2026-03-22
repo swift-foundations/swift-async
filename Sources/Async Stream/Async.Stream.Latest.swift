@@ -11,12 +11,20 @@
 
 public import Async_Primitives
 
-extension Async.Stream.Debounce {
-    /// Events used internally by debounce state.
-    @usableFromInline
-    enum Event: Sendable {
-        case element(Element)
-        case timerExpired
-        case upstreamComplete
+extension Async.Stream {
+    /// Latest operations namespace.
+    public struct Latest: Sendable {
+        @usableFromInline
+        let base: Async.Stream<Element>
+
+        @usableFromInline
+        init(base: Async.Stream<Element>) {
+            self.base = base
+        }
     }
+}
+
+extension Async.Stream {
+    /// Latest accessor for latest-value operations.
+    public var latest: Latest { Latest(base: self) }
 }

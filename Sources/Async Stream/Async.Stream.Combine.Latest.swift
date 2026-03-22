@@ -11,25 +11,7 @@
 
 public import Async_Primitives
 
-extension Async.Stream {
-    /// CombineLatest operations namespace.
-    public struct CombineLatest: Sendable {
-        @usableFromInline
-        let base: Async.Stream<Element>
-
-        @usableFromInline
-        init(base: Async.Stream<Element>) {
-            self.base = base
-        }
-    }
-}
-
-extension Async.Stream {
-    /// CombineLatest accessor for combine latest operations.
-    public var combineLatest: CombineLatest { CombineLatest(base: self) }
-}
-
-extension Async.Stream.CombineLatest {
+extension Async.Stream.Combine {
     /// Combines with another stream, emitting on either update.
     ///
     /// Emits a tuple with the latest value from each stream
@@ -37,17 +19,17 @@ extension Async.Stream.CombineLatest {
     ///
     /// ## Usage
     /// ```swift
-    /// let combined = stream1.combineLatest(stream2)
+    /// let combined = stream1.combine.latest(stream2)
     /// for await (a, b) in combined { }
     /// ```
     ///
     /// - Parameter other: The stream to combine with.
     /// - Returns: A stream of tuples with latest values.
-    public func callAsFunction<Other: Sendable>(
+    public func latest<Other: Sendable>(
         _ other: Async.Stream<Other>
     ) -> Async.Stream<(Element, Other)> {
         Async.Stream<(Element, Other)> { [base] in
-            let state = Async.Stream<(Element, Other)>.CombineLatest.State<Element, Other>()
+            let state = Async.Stream<(Element, Other)>.Combine.State<Element, Other>()
 
             let task1 = Task {
                 for await element in base {

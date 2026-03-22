@@ -14,11 +14,6 @@ public import Clock_Primitives
 internal import Clocks_Dependency
 public import Ownership_Primitives
 
-extension Async.Stream {
-    /// Namespace for throttle operations.
-    public enum Throttle {}
-}
-
 extension Async.Stream.Throttle {
     /// Internal state for throttle.
     @usableFromInline
@@ -59,32 +54,6 @@ extension Async.Stream.Throttle.State {
 
             lastEmitTime = now
             return element
-        }
-    }
-}
-
-// MARK: - Throttle Method
-
-extension Async.Stream {
-    /// Limits emissions to at most one per duration.
-    ///
-    /// Emits the first element, then ignores subsequent elements
-    /// until the duration has passed.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let throttled = mouseMoves.throttle(.milliseconds(16))
-    /// // At most 60fps
-    /// ```
-    ///
-    /// - Parameter duration: The minimum time between emissions.
-    /// - Returns: A throttled stream.
-    public func throttle(_ duration: Duration) -> Self {
-        Self { [self] in
-            let state = Async.Stream<Element>.Throttle.State(stream: self, duration: duration)
-            return Iterator {
-                await state.next()
-            }
         }
     }
 }

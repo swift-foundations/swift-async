@@ -13,8 +13,21 @@ public import Async_Primitives
 public import Ownership_Primitives
 
 extension Async.Stream {
-    /// Namespace for distinct operations.
-    public enum Distinct {}
+    /// Distinct operations namespace.
+    public struct Distinct: Sendable {
+        @usableFromInline
+        let base: Async.Stream<Element>
+
+        @usableFromInline
+        init(base: Async.Stream<Element>) {
+            self.base = base
+        }
+    }
+}
+
+extension Async.Stream {
+    /// Distinct accessor for distinct operations.
+    public var distinct: Distinct { Distinct(base: self) }
 }
 
 extension Async.Stream.Distinct {
@@ -55,39 +68,39 @@ extension Async.Stream.Distinct.State {
     }
 }
 
-// MARK: - DistinctUntilChanged Methods
+// MARK: - UntilChanged Methods
 
-extension Async.Stream where Element: Equatable {
+extension Async.Stream.Distinct where Element: Equatable {
     /// Suppresses consecutive duplicate elements.
     ///
     /// ## Usage
     /// ```swift
-    /// let distinct = [1, 1, 2, 2, 2, 3, 1].asStream().distinctUntilChanged()
+    /// let distinct = [1, 1, 2, 2, 2, 3, 1].asStream().distinct.untilChanged()
     /// // Emits: 1, 2, 3, 1
     /// ```
     ///
     /// - Returns: A stream without consecutive duplicates.
-    public func distinctUntilChanged() -> Self {
-        distinctUntilChanged(==)
+    public func untilChanged() -> Async.Stream<Element> {
+        untilChanged(==)
     }
 }
 
-extension Async.Stream {
+extension Async.Stream.Distinct {
     /// Suppresses consecutive elements that compare equal.
     ///
     /// ## Usage
     /// ```swift
-    /// let distinct = users.distinctUntilChanged { $0.id == $1.id }
+    /// let distinct = users.distinct.untilChanged { $0.id == $1.id }
     /// ```
     ///
     /// - Parameter areEqual: A function to compare consecutive elements.
     /// - Returns: A stream without consecutive duplicates.
-    public func distinctUntilChanged(
+    public func untilChanged(
         _ areEqual: @escaping @Sendable (Element, Element) -> Bool
-    ) -> Self {
-        Self { [self] in
-            let state = Async.Stream<Element>.Distinct.State(stream: self, areEqual: areEqual)
-            return Iterator {
+    ) -> Async.Stream<Element> {
+        Async.Stream<Element> { [base] in
+            let state = Async.Stream<Element>.Distinct.State(stream: base, areEqual: areEqual)
+            return Async.Stream<Element>.Iterator {
                 await state.next()
             }
         }
@@ -97,46 +110,14 @@ extension Async.Stream {
     ///
     /// ## Usage
     /// ```swift
-    /// let distinct = users.distinctUntilChanged { $0.id }
+    /// let distinct = users.distinct.untilChanged { $0.id }
     /// ```
     ///
     /// - Parameter key: A function to extract the key to compare.
     /// - Returns: A stream without consecutive duplicates by key.
-    public func distinctUntilChanged<Key: Equatable & Sendable>(
+    public func untilChanged<Key: Equatable & Sendable>(
         by key: @escaping @Sendable (Element) -> Key
-    ) -> Self {
-        distinctUntilChanged { key($0) == key($1) }
-    }
-}
-
-// MARK: - First Methods
-
-extension Async.Stream {
-    /// Returns only the first element.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let first = stream.first()
-    /// for await value in first { print(value) }  // prints one element
-    /// ```
-    ///
-    /// - Returns: A stream that emits only the first element.
-    public func first() -> Self {
-        prefix(1)
-    }
-
-    /// Returns only the first element matching predicate.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let firstEven = numbers.first { $0 % 2 == 0 }
-    /// ```
-    ///
-    /// - Parameter predicate: A function to test elements.
-    /// - Returns: A stream that emits the first matching element.
-    public func first(
-        where predicate: @escaping @Sendable (Element) -> Bool
-    ) -> Self {
-        filter(predicate).first()
+    ) -> Async.Stream<Element> {
+        untilChanged { key($0) == key($1) }
     }
 }

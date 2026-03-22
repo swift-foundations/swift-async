@@ -16,6 +16,10 @@ extension Async {
     /// that created the pipeline, not on the cooperative pool.
     ///
     /// Created by calling `.compactMap(_:)` on any `AsyncSequence`.
+    ///
+    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
+    // nesting `Compact` inside produces unusable type paths.
+    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
     public struct CompactMap<Base: AsyncSequence, Output>: AsyncSequence {
         public typealias Element = Output
 
@@ -71,10 +75,15 @@ extension Async {
             }
         }
 
-        @inlinable
-        public func makeAsyncIterator() -> Iterator {
-            Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
-        }
+    }
+}
+
+// MARK: - AsyncSequence Conformance
+
+extension Async.CompactMap {
+    @inlinable
+    public func makeAsyncIterator() -> Iterator {
+        Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
     }
 }
 

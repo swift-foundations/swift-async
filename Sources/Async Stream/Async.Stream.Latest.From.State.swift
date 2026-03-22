@@ -12,7 +12,7 @@
 public import Async_Primitives
 public import Ownership_Primitives
 
-extension Async.Stream.WithLatestFrom {
+extension Async.Stream.Latest {
     /// Internal state for withLatestFrom.
     @usableFromInline
     actor State<Other: Sendable> {
@@ -39,7 +39,7 @@ extension Async.Stream.WithLatestFrom {
     }
 }
 
-extension Async.Stream.WithLatestFrom.State {
+extension Async.Stream.Latest.State {
     @usableFromInline
     func startOtherTask() {
         guard !started else { return }

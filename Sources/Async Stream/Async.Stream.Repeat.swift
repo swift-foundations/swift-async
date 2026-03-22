@@ -11,16 +11,7 @@
 
 public import Async_Primitives
 
-extension Async.Stream.Buffer {
-    /// Namespace for time-based buffering.
-    public enum Time {}
-}
-
-extension Async.Stream.Buffer.Time {
-    @usableFromInline
-    enum Event: Sendable {
-        case element(Element)
-        case timerExpired
-        case upstreamComplete
-    }
+extension Async.Stream {
+    /// Namespace for repeat operations.
+    public enum Repeat {}
 }

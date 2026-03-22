@@ -12,13 +12,9 @@
 public import Async_Primitives
 public import Ownership_Primitives
 public import Clocks
+internal import Clocks_Dependency
 
-extension Async.Stream.Buffer {
-    /// Namespace for count-or-time buffering.
-    public enum CountOrTime {}
-}
-
-extension Async.Stream.Buffer.CountOrTime {
+extension Async.Stream.Buffer.Bounded {
     /// Internal state for count-or-time buffering.
     @usableFromInline
     actor State {
@@ -46,14 +42,16 @@ extension Async.Stream.Buffer.CountOrTime {
     }
 }
 
-extension Async.Stream.Buffer.CountOrTime.State {
+extension Async.Stream.Buffer.Bounded.State {
     @usableFromInline
     func next() async -> [Element]? {
+        @Dependency(\.clock) var clock
+        let resolvedClock = clock
         if upstreamDone && buffer.isEmpty {
             return nil
         }
 
-        let deadline = Clock.Continuous.now + duration
+        let deadline = resolvedClock.now.advanced(by: duration)
 
         while true {
             // Check count first
@@ -72,7 +70,8 @@ extension Async.Stream.Buffer.CountOrTime.State {
                 return nil
             }
 
-            let remaining = deadline - Clock.Continuous.now
+            let now = resolvedClock.now
+            let remaining = now.duration(to: deadline)
             if remaining <= .zero {
                 // Time window expired
                 let result = buffer
@@ -94,7 +93,7 @@ extension Async.Stream.Buffer.CountOrTime.State {
                 }
 
                 group.addTask {
-                    try? await Task.sleep(for: remaining)
+                    try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: remaining))
                     return .timerExpired
                 }
 

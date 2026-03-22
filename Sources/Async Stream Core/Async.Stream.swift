@@ -16,7 +16,7 @@ extension Async {
     /// A composable asynchronous stream of values.
     ///
     /// `Stream` provides a unified concrete type for composing asynchronous
-    /// sequences with operators like `merge`, `zip`, `combineLatest`, `debounce`, etc.
+    /// sequences with operators like `merge`, `zip`, `combine.latest`, `debounce`, etc.
     ///
     /// Unlike raw `AsyncSequence`, `Stream` is a concrete type that can be
     /// stored, passed around, and composed without type erasure or type explosion.

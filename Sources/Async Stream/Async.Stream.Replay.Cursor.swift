@@ -11,32 +11,29 @@
 
 public import Async_Primitives
 
-extension Async.Stream.Repeat {
-    /// Internal state for repeat stream.
+extension Async.Stream.Replay {
+    /// Wrapper that lazily subscribes to replay state.
     @usableFromInline
-    actor State {
+    actor Cursor {
         @usableFromInline
-        let value: Element
+        let state: Async.Stream<Element>.Replay.State
 
         @usableFromInline
-        var remaining: Int?
+        var subscription: Async.Stream<Element>.Replay.Subscription?
 
         @usableFromInline
-        init(value: Element, count: Int?) {
-            self.value = value
-            self.remaining = count
+        init(state: Async.Stream<Element>.Replay.State) {
+            self.state = state
         }
     }
 }
 
-extension Async.Stream.Repeat.State {
+extension Async.Stream.Replay.Cursor {
     @usableFromInline
     func next() async -> Element? {
-        if Task.isCancelled { return nil }
-        if let r = remaining {
-            if r <= 0 { return nil }
-            remaining = r - 1
+        if subscription == nil {
+            subscription = await state.subscribe()
         }
-        return value
+        return await subscription!.next()
     }
 }

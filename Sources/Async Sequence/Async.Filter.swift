@@ -71,10 +71,15 @@ extension Async {
             }
         }
 
-        @inlinable
-        public func makeAsyncIterator() -> Iterator {
-            Iterator(baseIterator: base.makeAsyncIterator(), predicate: predicate)
-        }
+    }
+}
+
+// MARK: - AsyncSequence Conformance
+
+extension Async.Filter {
+    @inlinable
+    public func makeAsyncIterator() -> Iterator {
+        Iterator(baseIterator: base.makeAsyncIterator(), predicate: predicate)
     }
 }
 

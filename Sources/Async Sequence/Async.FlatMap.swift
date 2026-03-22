@@ -17,6 +17,10 @@ extension Async {
     /// are consumed serially (one at a time, in order).
     ///
     /// Created by calling `.flatMap(_:)` on any `AsyncSequence`.
+    ///
+    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
+    // nesting `Flat` inside produces unusable type paths.
+    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
     public struct FlatMap<Base: AsyncSequence, Segment: AsyncSequence>: AsyncSequence {
         public typealias Element = Segment.Element
 
@@ -85,10 +89,15 @@ extension Async {
             }
         }
 
-        @inlinable
-        public func makeAsyncIterator() -> Iterator {
-            Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
-        }
+    }
+}
+
+// MARK: - AsyncSequence Conformance
+
+extension Async.FlatMap {
+    @inlinable
+    public func makeAsyncIterator() -> Iterator {
+        Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
     }
 }
 

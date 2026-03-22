@@ -11,12 +11,7 @@
 
 public import Async_Primitives
 
-extension Async.Stream.Debounce {
-    /// Events used internally by debounce state.
-    @usableFromInline
-    enum Event: Sendable {
-        case element(Element)
-        case timerExpired
-        case upstreamComplete
-    }
+extension Async.Stream.Buffer {
+    /// Namespace for time-based buffering.
+    public enum Time {}
 }

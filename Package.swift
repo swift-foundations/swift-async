@@ -25,9 +25,9 @@ let package = Package(
             targets: ["Async Stream"]
         ),
         .library(
-            name: "Async Stream Buffering",
-            targets: ["Async Stream Buffering"]
-        )
+            name: "Async Test Support",
+            targets: ["Async Test Support"]
+        ),
     ],
     dependencies: [
         .package(path: "../../swift-primitives/swift-async-primitives"),
@@ -66,32 +66,35 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Async Stream Buffering
-
-        .target(
-            name: "Async Stream Buffering",
-            dependencies: [
-                "Async Stream Core",
-            ]
-        ),
         .target(
             name: "Async",
             dependencies: [
                 "Async Sequence",
                 "Async Stream",
-                "Async Stream Buffering",
             ]
         ),
+        // MARK: - Test Support
+
+        .target(
+            name: "Async Test Support",
+            dependencies: [
+                "Async",
+            ],
+            path: "Tests/Support"
+        ),
+
+        // MARK: - Tests
+
         .testTarget(
             name: "Async Sequence Tests",
             dependencies: [
-                "Async",
+                "Async Test Support",
             ]
         ),
         .testTarget(
             name: "Async Stream Tests",
             dependencies: [
-                "Async",
+                "Async Test Support",
                 .product(name: "Clocks Dependency", package: "swift-dependencies"),
             ]
         )

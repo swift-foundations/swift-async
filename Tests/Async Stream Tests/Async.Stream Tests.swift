@@ -110,7 +110,7 @@ extension AsyncStreamTests.Unit {
     @Test
     func `compactMap transforms and filters`() async {
         let stream = Async.Stream.from(["1", "two", "3"])
-            .compactMap { Int($0) }
+            .map.compact { Int($0) }
 
         var results: [Int] = []
         for await value in stream {
@@ -123,7 +123,7 @@ extension AsyncStreamTests.Unit {
     @Test
     func `flatMap concatenates inner streams`() async {
         let stream = Async.Stream.from([1, 2, 3])
-            .flatMap { n in
+            .map.flat { n in
                 Async.Stream.from([n, n * 10])
             }
 
@@ -273,7 +273,7 @@ extension AsyncStreamTests.Unit {
 
     @Test
     func `distinctUntilChanged removes consecutive duplicates`() async {
-        let stream = Async.Stream.from([1, 1, 2, 2, 2, 3, 1, 1]).distinctUntilChanged()
+        let stream = Async.Stream.from([1, 1, 2, 2, 2, 3, 1, 1]).distinct.untilChanged()
 
         var results: [Int] = []
         for await value in stream {
@@ -286,7 +286,7 @@ extension AsyncStreamTests.Unit {
     @Test
     func `distinctUntilChanged by key`() async {
         let stream = Async.Stream.from([1, -1, 2, -2, 3])
-            .distinctUntilChanged { abs($0) }
+            .distinct.untilChanged(by: { abs($0) })
 
         var results: [Int] = []
         for await value in stream {

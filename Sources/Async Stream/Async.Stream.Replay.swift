@@ -46,8 +46,8 @@ extension Async.Stream {
         }
 
         return Self {
-            // Create a wrapper that lazily subscribes on first next() call
-            let wrapper = Async.Stream<Element>.Replay.IteratorWrapper(state: state)
+            // Create a cursor that lazily subscribes on first next() call
+            let wrapper = Async.Stream<Element>.Replay.Cursor(state: state)
             return Iterator {
                 await wrapper.next()
             }

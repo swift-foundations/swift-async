@@ -95,7 +95,7 @@ extension AsyncStreamTests.Unit {
     @Test
     func `async compactMap transforms and filters`() async {
         let stream = Async.Stream.from(["1", "two", "3"])
-            .compactMap { value async -> Int? in
+            .map.compact { value async -> Int? in
                 Int(value)
             }
 
@@ -168,7 +168,7 @@ extension AsyncStreamTests.Unit {
     @Test
     func `distinctUntilChanged with custom equality`() async {
         let stream = Async.Stream.from([1, -1, 2, -2, 3])
-            .distinctUntilChanged { abs($0) == abs($1) }
+            .distinct.untilChanged { abs($0) == abs($1) }
 
         var results: [Int] = []
         for await value in stream {

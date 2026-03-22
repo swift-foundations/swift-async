@@ -11,23 +11,7 @@
 
 public import Async_Primitives
 
-extension Async.Stream {
-    /// WithLatestFrom accessor.
-    public var withLatestFrom: WithLatestFrom { WithLatestFrom(base: self) }
-
-    /// WithLatestFrom operations namespace.
-    public struct WithLatestFrom: Sendable {
-        @usableFromInline
-        let base: Async.Stream<Element>
-
-        @usableFromInline
-        init(base: Async.Stream<Element>) {
-            self.base = base
-        }
-    }
-}
-
-extension Async.Stream.WithLatestFrom {
+extension Async.Stream.Latest {
     /// Combines with the latest value from another stream.
     ///
     /// Each time this stream emits, combines with the most recent
@@ -35,17 +19,17 @@ extension Async.Stream.WithLatestFrom {
     ///
     /// ## Usage
     /// ```swift
-    /// let combined = clicks.withLatestFrom(position)
+    /// let combined = clicks.latest.from(position)
     /// // Emits (click, latestPosition) on each click
     /// ```
     ///
     /// - Parameter other: The stream to sample from.
     /// - Returns: A stream of combined elements.
-    public func callAsFunction<Other: Sendable>(
+    public func from<Other: Sendable>(
         _ other: Async.Stream<Other>
     ) -> Async.Stream<(Element, Other)> {
         Async.Stream<(Element, Other)> { [base] in
-            let state = Async.Stream<Element>.WithLatestFrom.State<Other>(source: base, other: other)
+            let state = Async.Stream<Element>.Latest.State<Other>(source: base, other: other)
             return Async.Stream<(Element, Other)>.Iterator {
                 await state.next()
             }
@@ -58,10 +42,10 @@ extension Async.Stream.WithLatestFrom {
     ///   - other: The stream to sample from.
     ///   - transform: Function to combine the values.
     /// - Returns: A stream of transformed combinations.
-    public func callAsFunction<Other: Sendable, Result: Sendable>(
+    public func from<Other: Sendable, Result: Sendable>(
         _ other: Async.Stream<Other>,
         _ transform: @escaping @Sendable (Element, Other) -> Result
     ) -> Async.Stream<Result> {
-        self(other).map { transform($0.0, $0.1) }
+        self.from(other).map { transform($0.0, $0.1) }
     }
 }

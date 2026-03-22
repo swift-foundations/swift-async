@@ -11,8 +11,8 @@
 
 public import Async_Primitives
 
-extension Async.Stream.CombineLatest {
-    /// Internal state for combineLatest operations.
+extension Async.Stream.Combine {
+    /// Internal state for combine latest operations.
     @usableFromInline
     actor State<A: Sendable, B: Sendable> {
         @usableFromInline
@@ -38,7 +38,7 @@ extension Async.Stream.CombineLatest {
     }
 }
 
-extension Async.Stream.CombineLatest.State {
+extension Async.Stream.Combine.State {
     @usableFromInline
     func updateA(_ value: sending A) {
         latestA = value

@@ -68,10 +68,15 @@ extension Async {
             }
         }
 
-        @inlinable
-        public func makeAsyncIterator() -> Iterator {
-            Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
-        }
+    }
+}
+
+// MARK: - AsyncSequence Conformance
+
+extension Async.Map {
+    @inlinable
+    public func makeAsyncIterator() -> Iterator {
+        Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
     }
 }
 

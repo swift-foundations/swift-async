@@ -84,7 +84,7 @@ extension Async.Stream.Buffer {
     ///
     /// ## Usage
     /// ```swift
-    /// let batches = stream.buffer.countOrTime(count: 100, time: .seconds(1))
+    /// let batches = stream.buffer.bounded(count: 100, time: .seconds(1))
     /// // Emits when 100 elements collected OR 1 second passes
     /// ```
     ///
@@ -92,9 +92,9 @@ extension Async.Stream.Buffer {
     ///   - count: Maximum elements per batch.
     ///   - time: Maximum time window.
     /// - Returns: A stream of element arrays.
-    public func countOrTime(count: Int, time duration: Duration) -> Async.Stream<[Element]> {
+    public func bounded(count: Int, time duration: Duration) -> Async.Stream<[Element]> {
         Async.Stream<[Element]> { [base] in
-            let state = Async.Stream<Element>.Buffer.CountOrTime.State(stream: base, count: count, duration: duration)
+            let state = Async.Stream<Element>.Buffer.Bounded.State(stream: base, count: count, duration: duration)
             return Async.Stream<[Element]>.Iterator {
                 await state.next()
             }

@@ -11,12 +11,20 @@
 
 public import Async_Primitives
 
-extension Async.Stream.Debounce {
-    /// Events used internally by debounce state.
-    @usableFromInline
-    enum Event: Sendable {
-        case element(Element)
-        case timerExpired
-        case upstreamComplete
+extension Async.Stream {
+    /// Combine operations namespace.
+    public struct Combine: Sendable {
+        @usableFromInline
+        let base: Async.Stream<Element>
+
+        @usableFromInline
+        init(base: Async.Stream<Element>) {
+            self.base = base
+        }
     }
+}
+
+extension Async.Stream {
+    /// Combine accessor for combine operations.
+    public var combine: Combine { Combine(base: self) }
 }
