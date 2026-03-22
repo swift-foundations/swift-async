@@ -43,6 +43,8 @@ extension Async.Stream.Buffer.Count {
 }
 
 extension Async.Stream.Buffer.Count.State {
+    // WORKAROUND: @_optimize(none) — CopyPropagation false positive. TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md (Bug 2)
+    @_optimize(none)
     @usableFromInline
     func next() async -> [Element]? {
         while true {
