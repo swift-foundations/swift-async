@@ -22,7 +22,7 @@ extension Async.Stream.Combine {
         var latestB: B?
 
         @usableFromInline
-        var queue: Queue<(A, B)> = .init()
+        var queue: Queue<(A, B)>.Small<4> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<(A, B)?, Never>?

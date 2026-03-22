@@ -16,7 +16,7 @@ extension Async.Stream.Merge {
     @usableFromInline
     actor State {
         @usableFromInline
-        var queue: Queue<Element> = .init()
+        var queue: Queue<Element>.Small<4> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?

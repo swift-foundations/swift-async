@@ -22,7 +22,7 @@ extension Async.Stream.Transducer {
         var state: State
 
         @usableFromInline
-        var queue: Queue<Output> = .init()
+        var queue: Queue<Output>.Small<4> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false
