@@ -34,8 +34,7 @@ extension Ownership.Mutable.Unchecked where Value: AsyncIteratorProtocol {
     ///     }
     /// }
     /// ```
-    @usableFromInline
-    func next() async -> Value.Element? {
+    public func next() async -> Value.Element? {
         try? await mutable.value.next()
     }
 }

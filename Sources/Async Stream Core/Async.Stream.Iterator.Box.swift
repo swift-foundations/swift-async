@@ -33,6 +33,5 @@ extension Async.Stream.Iterator {
     ///     }
     /// }
     /// ```
-    @usableFromInline
-    typealias Box<I: AsyncIteratorProtocol> = Ownership.Mutable<I>.Unchecked
+    public typealias Box<I: AsyncIteratorProtocol> = Ownership.Mutable<I>.Unchecked
 }

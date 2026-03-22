@@ -1,8 +1,9 @@
 //
-//  File.swift
+//  exports.swift
 //  swift-async
 //
-//  Created by Coen ten Thije Boonkkamp on 01/03/2026.
+//  Created by Coen ten Thije Boonkkamp.
 //
 
-@_exported import Clock_Primitives
+@_exported public import Async_Stream_Core
+@_exported public import Clock_Primitives

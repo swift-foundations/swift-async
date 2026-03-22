@@ -39,9 +39,22 @@ let package = Package(
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
             ]
         ),
+
+        // MARK: - Async Stream Core (internal-only)
+
+        .target(
+            name: "Async Stream Core",
+            dependencies: [
+                .product(name: "Async Primitives", package: "swift-async-primitives"),
+            ]
+        ),
+
+        // MARK: - Async Stream
+
         .target(
             name: "Async Stream",
             dependencies: [
+                "Async Stream Core",
                 .product(name: "Async Primitives", package: "swift-async-primitives"),
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
                 .product(name: "Clocks", package: "swift-clocks"),
