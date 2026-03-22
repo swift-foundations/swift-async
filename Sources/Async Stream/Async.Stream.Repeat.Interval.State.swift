@@ -12,11 +12,6 @@
 public import Async_Primitives
 internal import Clocks_Dependency
 
-extension Async.Stream.Repeat {
-    /// Namespace for repeat with interval.
-    public enum Interval {}
-}
-
 extension Async.Stream.Repeat.Interval {
     /// Internal state for repeat with interval stream.
     @usableFromInline
@@ -53,38 +48,11 @@ extension Async.Stream.Repeat.Interval.State {
         }
 
         if !first {
-            try? await clock.sleep(until: clock.now.advanced(by: interval))
+            try? await clock.sleep(for: interval)
             if Task.isCancelled { return nil }
         }
         first = false
 
         return value
-    }
-}
-
-// MARK: - Repeat Interval Method
-
-extension Async.Stream {
-    /// Creates a stream that repeatedly emits a value with a delay between emissions.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// for await ping in Async.Stream.repeating("ping", every: .seconds(1)) {
-    ///     print(ping)
-    /// }
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - value: The value to emit.
-    ///   - interval: The delay between emissions.
-    ///   - count: Number of times to emit (nil for infinite).
-    /// - Returns: A stream that emits the value at intervals.
-    public static func repeating(_ value: Element, every interval: Duration, count: Int? = nil) -> Self {
-        Self {
-            let state = Async.Stream<Element>.Repeat.Interval.State(value: value, interval: interval, count: count)
-            return Iterator {
-                await state.next()
-            }
-        }
     }
 }

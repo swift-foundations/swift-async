@@ -32,7 +32,7 @@ extension Async.Stream {
             return Iterator {
                 @Dependency(\.clock) var clock
                 guard let element = await box.next() else { return nil }
-                try? await clock.sleep(until: clock.now.advanced(by: duration))
+                try? await clock.sleep(for: duration)
                 if Task.isCancelled { return nil }
                 return element
             }
