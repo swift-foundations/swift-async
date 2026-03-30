@@ -188,8 +188,12 @@ extension Async.Broadcast {
     }
 }
 
-extension Async.Channel.Unbounded.Receiver {
+extension Async.Channel.Unbounded.Receiver where Element: Sendable {
     /// Creates a stream from this receiver (consumes the receiver).
+    ///
+    /// Requires `Element: Sendable` because `Async.Stream` is a Sendable,
+    /// type-erased async sequence. For non-Sendable elements, use
+    /// `receiver.elements` directly.
     ///
     /// ## Usage
     /// ```swift
@@ -201,8 +205,12 @@ extension Async.Channel.Unbounded.Receiver {
     }
 }
 
-extension Async.Channel.Bounded.Receiver {
+extension Async.Channel.Bounded.Receiver where Element: Sendable {
     /// Creates a stream from this receiver (consumes the receiver).
+    ///
+    /// Requires `Element: Sendable` because `Async.Stream` is a Sendable,
+    /// type-erased async sequence. For non-Sendable elements, use
+    /// `receiver.elements` directly.
     ///
     /// ## Usage
     /// ```swift
