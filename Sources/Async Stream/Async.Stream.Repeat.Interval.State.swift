@@ -29,7 +29,7 @@ extension Async.Stream.Repeat.Interval {
         var first: Bool = true
 
         @usableFromInline
-        init(value: Element, interval: Duration, count: Int?) {
+        init(value: sending Element, interval: Duration, count: Int?) {
             self.value = value
             self.interval = interval
             self.remaining = count

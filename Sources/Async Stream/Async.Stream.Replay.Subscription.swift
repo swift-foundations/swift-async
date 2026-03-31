@@ -25,7 +25,7 @@ extension Async.Stream.Replay {
         var finished: Bool
 
         @usableFromInline
-        init(replay: [Element], finished: Bool) {
+        init(replay: sending [Element], finished: Bool) {
             self.queue = .init()
             for element in replay { self.queue.enqueue(element) }
             self.finished = finished

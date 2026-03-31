@@ -22,7 +22,7 @@ extension Async.Stream.Repeat {
         var remaining: Int?
 
         @usableFromInline
-        init(value: Element, count: Int?) {
+        init(value: sending Element, count: Int?) {
             self.value = value
             self.remaining = count
         }

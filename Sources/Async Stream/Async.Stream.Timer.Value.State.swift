@@ -26,7 +26,7 @@ extension Async.Stream.Timer.Value {
         var fired: Bool = false
 
         @usableFromInline
-        init(delay: Duration, value: Element) {
+        init(delay: Duration, value: sending Element) {
             self.delay = delay
             self.value = value
         }
