@@ -87,10 +87,10 @@ extension Async.CompactMap {
     }
 }
 
-// MARK: - Conditional Sendable
+// MARK: - Sendable
 
-extension Async.CompactMap: @unchecked Sendable
-    where Base: Sendable, Base.Element: Sendable, Output: Sendable {}
-
-extension Async.CompactMap.Iterator: @unchecked Sendable
-    where Base.AsyncIterator: Sendable, Base.Element: Sendable, Output: Sendable {}
+// Async.CompactMap is intentionally non-Sendable. The transform closures
+// are nonisolated(nonsending) — they inherit the caller's isolation and
+// may capture non-Sendable actor-isolated state. Claiming Sendable would
+// be unsound. For Sendable pipelines, use Async.Stream.map.compact
+// (which requires @Sendable closures).

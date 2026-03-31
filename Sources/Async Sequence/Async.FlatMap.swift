@@ -101,11 +101,10 @@ extension Async.FlatMap {
     }
 }
 
-// MARK: - Conditional Sendable
+// MARK: - Sendable
 
-extension Async.FlatMap: @unchecked Sendable
-    where Base: Sendable, Base.Element: Sendable, Segment: Sendable {}
-
-extension Async.FlatMap.Iterator: @unchecked Sendable
-    where Base.AsyncIterator: Sendable, Base.Element: Sendable,
-          Segment: Sendable, Segment.AsyncIterator: Sendable {}
+// Async.FlatMap is intentionally non-Sendable. The transform closures are
+// nonisolated(nonsending) — they inherit the caller's isolation and may
+// capture non-Sendable actor-isolated state. Claiming Sendable would be
+// unsound. For Sendable pipelines, use Async.Stream.map.flat (which
+// requires @Sendable closures).

@@ -80,10 +80,10 @@ extension Async.Map {
     }
 }
 
-// MARK: - Conditional Sendable
+// MARK: - Sendable
 
-extension Async.Map: @unchecked Sendable
-    where Base: Sendable, Base.Element: Sendable, Output: Sendable {}
-
-extension Async.Map.Iterator: @unchecked Sendable
-    where Base.AsyncIterator: Sendable, Base.Element: Sendable, Output: Sendable {}
+// Async.Map is intentionally non-Sendable. The transform closures are
+// nonisolated(nonsending) — they inherit the caller's isolation and may
+// capture non-Sendable actor-isolated state. Claiming Sendable would be
+// unsound. For Sendable pipelines, use Async.Stream.map (which
+// requires @Sendable closures).

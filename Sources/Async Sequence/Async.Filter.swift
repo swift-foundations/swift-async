@@ -83,10 +83,10 @@ extension Async.Filter {
     }
 }
 
-// MARK: - Conditional Sendable
+// MARK: - Sendable
 
-extension Async.Filter: @unchecked Sendable
-    where Base: Sendable, Base.Element: Sendable {}
-
-extension Async.Filter.Iterator: @unchecked Sendable
-    where Base.AsyncIterator: Sendable, Base.Element: Sendable {}
+// Async.Filter is intentionally non-Sendable. The predicate closures are
+// nonisolated(nonsending) — they inherit the caller's isolation and may
+// capture non-Sendable actor-isolated state. Claiming Sendable would be
+// unsound. For Sendable pipelines, use Async.Stream.filter (which
+// requires @Sendable closures).
