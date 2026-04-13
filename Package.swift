@@ -34,6 +34,7 @@ let package = Package(
         .package(path: "../../swift-primitives/swift-buffer-primitives"),
         .package(path: "../../swift-primitives/swift-queue-primitives"),
         .package(path: "../../swift-primitives/swift-reference-primitives"),
+        .package(path: "../../swift-primitives/swift-standard-library-extensions"),
         .package(path: "../swift-clocks"),
         .package(path: "../swift-dependencies", traits: ["Clocks"]),
     ],
@@ -65,6 +66,7 @@ let package = Package(
             dependencies: [
                 "Async Stream Core",
                 .product(name: "Clocks Dependency", package: "swift-dependencies"),
+                .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
             ]
         ),
 

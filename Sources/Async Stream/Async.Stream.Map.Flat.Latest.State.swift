@@ -11,6 +11,7 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream.Map.Flat {
     /// Namespace for latest operations.
@@ -87,11 +88,13 @@ extension Async.Stream.Map.Flat.Latest.State {
                 case .sync(let f): innerStream = f(outerElement)
                 case .async(let f): innerStream = await f(outerElement)
                 }
-                innerTask = Task {
-                    for await innerElement in innerStream {
-                        await self.receiveInner(innerElement)
+                innerTask = Task { [self] in
+                    await self.run { state in
+                        for await innerElement in innerStream {
+                            await state.receiveInner(innerElement)
+                        }
+                        await state.markInnerDone()
                     }
-                    await self.markInnerDone()
                 }
             }
 

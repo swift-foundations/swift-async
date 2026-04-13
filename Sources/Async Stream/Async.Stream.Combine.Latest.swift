@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream.Combine {
     /// Combines with another stream, emitting on either update.
@@ -32,17 +33,21 @@ extension Async.Stream.Combine {
             let state = Async.Stream<(Element, Other)>.Combine.State<Element, Other>()
 
             let task1 = Task {
-                for await element in base {
-                    await state.updateA(element)
+                await state.run { state in
+                    for await element in base {
+                        state.updateA(element)
+                    }
+                    state.completeA()
                 }
-                await state.completeA()
             }
 
             let task2 = Task {
-                for await element in other {
-                    await state.updateB(element)
+                await state.run { state in
+                    for await element in other {
+                        state.updateB(element)
+                    }
+                    state.completeB()
                 }
-                await state.completeB()
             }
 
             return Async.Stream<(Element, Other)>.Iterator {

@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream {
     /// Merge operations namespace.
@@ -42,17 +43,21 @@ extension Async.Stream.Merge {
 
             // Start both streams
             let task1 = Task {
-                for await element in a {
-                    await state.send(element)
+                await state.run { state in
+                    for await element in a {
+                        state.send(element)
+                    }
+                    state.complete()
                 }
-                await state.complete()
             }
 
             let task2 = Task {
-                for await element in b {
-                    await state.send(element)
+                await state.run { state in
+                    for await element in b {
+                        state.send(element)
+                    }
+                    state.complete()
                 }
-                await state.complete()
             }
 
             return Async.Stream<Element>.Iterator {

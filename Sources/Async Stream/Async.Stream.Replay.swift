@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream {
     /// Namespace for replay operations.
@@ -39,10 +40,12 @@ extension Async.Stream {
 
         // Start forwarding upstream
         Task { [self] in
-            for await element in self {
-                await state.send(element)
+            await state.run { state in
+                for await element in self {
+                    state.send(element)
+                }
+                state.finish()
             }
-            await state.finish()
         }
 
         return Self {

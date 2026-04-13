@@ -11,6 +11,7 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream.Sample {
     /// Internal state for sample.
@@ -47,11 +48,13 @@ extension Async.Stream.Sample.State {
     func startSourceTask() {
         guard !started else { return }
         started = true
-        sourceTask = Task {
-            for await element in source {
-                await self.updateLatest(element)
+        sourceTask = Task { [self] in
+            await self.run { state in
+                for await element in source {
+                    await state.updateLatest(element)
+                }
+                await state.markSourceDone()
             }
-            await self.markSourceDone()
         }
     }
 
