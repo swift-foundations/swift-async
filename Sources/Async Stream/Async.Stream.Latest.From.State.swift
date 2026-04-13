@@ -11,6 +11,7 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream.Latest {
     /// Internal state for withLatestFrom.
@@ -44,9 +45,11 @@ extension Async.Stream.Latest.State {
     func startOtherTask() {
         guard !started else { return }
         started = true
-        otherTask = Task {
-            for await element in other {
-                await self.updateLatestOther(element)
+        otherTask = Task { [self] in
+            await self.run { state in
+                for await element in other {
+                    await state.updateLatestOther(element)
+                }
             }
         }
     }
