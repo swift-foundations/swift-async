@@ -11,7 +11,7 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
-internal import Buffer_Primitives
+public import Buffer_Ring_Primitives
 internal import Cardinal_Primitives
 
 extension Async.Stream.Buffer.Count {
