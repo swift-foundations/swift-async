@@ -25,14 +25,14 @@ extension Async.Stream.Buffer.Count {
         let count: Index<Element>.Count
 
         @usableFromInline
-        var ring: Buffer<Element>.Ring.Bounded
+        var ring: Buffer<Storage<Element>.Heap>.Ring.Bounded
 
         @usableFromInline
         init(stream: Async.Stream<Element>, count: Int) {
             let typedCount = try! Index<Element>.Count(max(1, count))
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.count = typedCount
-            self.ring = Buffer<Element>.Ring.Bounded(minimumCapacity: typedCount)
+            self.ring = Buffer<Storage<Element>.Heap>.Ring.Bounded(minimumCapacity: typedCount)
         }
     }
 }

@@ -18,7 +18,7 @@ extension Async.Stream.Replay {
     @usableFromInline
     actor State {
         @usableFromInline
-        var ring: Buffer<Element>.Ring.Bounded
+        var ring: Buffer<Storage<Element>.Heap>.Ring.Bounded
 
         @usableFromInline
         var subscriptions: [Async.Stream<Element>.Replay.Subscription] = []
@@ -29,7 +29,7 @@ extension Async.Stream.Replay {
         @usableFromInline
         init(bufferSize: Int) {
             let capacity = try! Index<Element>.Count(max(1, bufferSize))
-            self.ring = Buffer<Element>.Ring.Bounded(minimumCapacity: capacity)
+            self.ring = Buffer<Storage<Element>.Heap>.Ring.Bounded(minimumCapacity: capacity)
         }
     }
 }
