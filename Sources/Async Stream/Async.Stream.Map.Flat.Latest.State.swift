@@ -32,7 +32,7 @@ extension Async.Stream.Map.Flat.Latest {
         var innerTask: Task<Void, Never>?
 
         @usableFromInline
-        var queue: Queue<U>.Small<4> = .init()
+        var queue: Queue<U> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<U?, Never>?
