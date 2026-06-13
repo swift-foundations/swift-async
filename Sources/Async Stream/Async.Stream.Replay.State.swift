@@ -10,17 +10,22 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Memory_Heap_Primitives
 public import Storage_Contiguous_Primitives
-public import Buffer_Ring_Primitives
 internal import Cardinal_Primitives
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Buffer_Ring_Bounded_Primitive
+internal import Buffer_Primitive
+internal import Buffer_Ring_Primitives
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Replay {
     /// Internal state for replay.
     @usableFromInline
     actor State {
         @usableFromInline
-        var ring: Buffer<Storage<Element>.Contiguous<Memory.Heap<Element>>>.Ring.Bounded
+        var ring: Column.Ring<Element>.Bounded
 
         @usableFromInline
         var subscriptions: [Async.Stream<Element>.Replay.Subscription] = []
@@ -31,7 +36,7 @@ extension Async.Stream.Replay {
         @usableFromInline
         init(bufferSize: Int) {
             let capacity = try! Index<Element>.Count(max(1, bufferSize))
-            self.ring = Buffer<Storage<Element>.Contiguous<Memory.Heap<Element>>>.Ring.Bounded(minimumCapacity: capacity)
+            self.ring = Column.Ring<Element>.Bounded(minimumCapacity: capacity)
         }
     }
 }

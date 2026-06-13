@@ -10,13 +10,20 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Replay {
     /// Subscription for replay stream.
     @usableFromInline
     actor Subscription {
         @usableFromInline
-        var queue: Queue<Element>
+        var queue: Queue<Column.Ring<Element>>
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?

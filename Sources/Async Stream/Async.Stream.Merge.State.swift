@@ -10,13 +10,20 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Merge {
     /// Internal state for merge operations.
     @usableFromInline
     actor State {
         @usableFromInline
-        var queue: Queue<Element> = .init()
+        var queue: Queue<Column.Ring<Element>> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?

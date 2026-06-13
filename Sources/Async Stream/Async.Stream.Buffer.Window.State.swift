@@ -13,6 +13,13 @@ public import Async_Primitives
 public import Ownership_Primitives
 public import Clocks
 internal import Clocks_Dependency
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Buffer.Window {
     /// Internal state for count-or-time buffering.
@@ -28,7 +35,7 @@ extension Async.Stream.Buffer.Window {
         let duration: Duration
 
         @usableFromInline
-        var queue: Queue<Element> = .init()
+        var queue: Queue<Column.Ring<Element>> = .init()
 
         @usableFromInline
         var elementCount: Int = 0

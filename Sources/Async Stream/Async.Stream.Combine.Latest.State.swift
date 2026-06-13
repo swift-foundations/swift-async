@@ -10,6 +10,13 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Combine {
     /// Internal state for combine latest operations.
@@ -22,7 +29,7 @@ extension Async.Stream.Combine {
         var latestB: B?
 
         @usableFromInline
-        var queue: Queue<(A, B)> = .init()
+        var queue: Queue<Column.Ring<(A, B)>> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<(A, B)?, Never>?

@@ -12,6 +12,13 @@
 public import Async_Primitives
 public import Ownership_Primitives
 internal import Standard_Library_Extensions
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Map.Flat {
     /// Namespace for latest operations.
@@ -32,7 +39,7 @@ extension Async.Stream.Map.Flat.Latest {
         var innerTask: Task<Void, Never>?
 
         @usableFromInline
-        var queue: Queue<U> = .init()
+        var queue: Queue<Column.Ring<U>> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<U?, Never>?

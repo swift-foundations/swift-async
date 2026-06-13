@@ -7,6 +7,13 @@
 
 public import Async_Primitives
 public import Ownership_Primitives
+public import Column_Primitives
+public import Buffer_Ring_Primitive
+public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 
 extension Async.Stream.Transducer {
     /// Actor managing transducer state.
@@ -22,7 +29,7 @@ extension Async.Stream.Transducer {
         var state: State
 
         @usableFromInline
-        var queue: Queue<Output> = .init()
+        var queue: Queue<Column.Ring<Output>> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false
