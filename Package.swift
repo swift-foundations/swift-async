@@ -75,6 +75,8 @@ let package = Package(
                 .product(name: "Buffer Ring Primitives", package: "swift-buffer-ring-primitives"),
                 .product(name: "Clocks Dependency", package: "swift-dependencies"),
                 .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
+                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
+                .product(name: "Storage Contiguous Primitives", package: "swift-storage-primitives"),
             ]
         ),
 
