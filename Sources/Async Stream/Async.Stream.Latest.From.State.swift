@@ -45,6 +45,12 @@ extension Async.Stream.Latest.State {
     func startOtherTask() {
         guard !started else { return }
         started = true
+        // Hoist the member into a local: an implicit-self reference
+        // (`other` = self.other) inside the `run` closure captures the
+        // actor alongside the explicit `isolated Self` parameter, and
+        // SILGen traps on asserts toolchains ("building SIL function
+        // type with multiple isolated parameters", ASTContext.cpp:5421).
+        let other = self.other
         otherTask = Task { [self] in
             await self.run { state in
                 for await element in other {

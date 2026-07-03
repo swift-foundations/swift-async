@@ -48,6 +48,12 @@ extension Async.Stream.Sample.State {
     func startSourceTask() {
         guard !started else { return }
         started = true
+        // Hoist the member into a local: an implicit-self reference
+        // (`source` = self.source) inside the `run` closure captures the
+        // actor alongside the explicit `isolated Self` parameter, and
+        // SILGen traps on asserts toolchains ("building SIL function
+        // type with multiple isolated parameters", ASTContext.cpp:5421).
+        let source = self.source
         sourceTask = Task { [self] in
             await self.run { state in
                 for await element in source {
