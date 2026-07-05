@@ -29,7 +29,7 @@ extension Async.Stream.Transducer {
         var state: State
 
         @usableFromInline
-        var queue: Queue<Column.Ring<Output>> = .init()
+        var queue: Queue<Output> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false

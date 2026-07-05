@@ -23,7 +23,7 @@ extension Async.Stream.Replay {
     @usableFromInline
     actor Subscription {
         @usableFromInline
-        var queue: Queue<Column.Ring<Element>>
+        var queue: Queue<Element>
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?

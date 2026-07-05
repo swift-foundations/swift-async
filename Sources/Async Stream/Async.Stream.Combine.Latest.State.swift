@@ -29,7 +29,7 @@ extension Async.Stream.Combine {
         var latestB: B?
 
         @usableFromInline
-        var queue: Queue<Column.Ring<(A, B)>> = .init()
+        var queue: Queue<(A, B)> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<(A, B)?, Never>?

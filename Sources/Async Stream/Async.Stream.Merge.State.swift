@@ -23,7 +23,7 @@ extension Async.Stream.Merge {
     @usableFromInline
     actor State {
         @usableFromInline
-        var queue: Queue<Column.Ring<Element>> = .init()
+        var queue: Queue<Element> = .init()
 
         @usableFromInline
         var continuation: CheckedContinuation<Element?, Never>?

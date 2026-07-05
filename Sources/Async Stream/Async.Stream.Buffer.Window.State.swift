@@ -35,7 +35,7 @@ extension Async.Stream.Buffer.Window {
         let duration: Duration
 
         @usableFromInline
-        var queue: Queue<Column.Ring<Element>> = .init()
+        var queue: Queue<Element> = .init()
 
         @usableFromInline
         var elementCount: Int = 0

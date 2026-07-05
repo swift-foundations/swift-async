@@ -32,7 +32,7 @@ extension Async.Stream.Buffer.Time {
         let duration: Duration
 
         @usableFromInline
-        var queue: Queue<Column.Ring<Element>> = .init()
+        var queue: Queue<Element> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false
