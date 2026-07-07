@@ -10,6 +10,9 @@
 // ===----------------------------------------------------------------------===//
 
 extension Async {
+    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
+    // nesting `Compact` inside produces unusable type paths.
+    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
     /// An asynchronous sequence that transforms elements and discards `nil` results.
     ///
     /// `CompactMap` preserves caller isolation — the transform runs on the actor
@@ -17,9 +20,6 @@ extension Async {
     ///
     /// Created by calling `.compactMap(_:)` on any `AsyncSequence`.
     ///
-    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
-    // nesting `Compact` inside produces unusable type paths.
-    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
     public struct CompactMap<Base: AsyncSequence, Output>: AsyncSequence {
         public typealias Element = Output
 

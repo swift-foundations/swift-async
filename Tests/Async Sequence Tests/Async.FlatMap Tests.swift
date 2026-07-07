@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
+import Testing
 
 @Suite("Async.FlatMap")
 struct AsyncFlatMapTests {
@@ -83,7 +83,8 @@ struct AsyncFlatMapTests {
     func `chains with filter`() async {
         let source = Produce([1, 2, 3])
 
-        let pipeline = source
+        let pipeline =
+            source
             .flatMap { Produce([$0, $0 * 10]) }
             .filter { $0 > 5 }
 

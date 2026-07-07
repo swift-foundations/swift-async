@@ -10,15 +10,15 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Storage_Contiguous_Primitives
+internal import Buffer_Primitive
+public import Buffer_Ring_Bounded_Primitive
+public import Buffer_Ring_Primitive
+internal import Buffer_Ring_Primitives
 internal import Cardinal_Primitives
 public import Column_Primitives
-public import Buffer_Ring_Primitive
-public import Buffer_Ring_Bounded_Primitive
-internal import Buffer_Primitive
-internal import Buffer_Ring_Primitives
 internal import Memory_Allocator_Primitive
 internal import Memory_Heap_Primitives
+public import Storage_Contiguous_Primitives
 
 extension Async.Stream.Replay {
     /// Internal state for replay.
@@ -35,6 +35,8 @@ extension Async.Stream.Replay {
 
         @usableFromInline
         init(bufferSize: Int) {
+            // max(1, …) guarantees a valid ≥1 Count, so this init never throws.
+            // swiftlint:disable:next force_try
             let capacity = try! Index<Element>.Count(max(1, bufferSize))
             self.ring = Column.Ring<Element>.Bounded(minimumCapacity: capacity)
         }

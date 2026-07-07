@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
+import Testing
 
 // MARK: - Remaining Operator Unit Tests
 

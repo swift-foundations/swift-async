@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
 import Clocks_Dependency
+import Testing
 
 // MARK: - Temporal Operator Unit Tests
 

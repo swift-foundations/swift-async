@@ -10,6 +10,9 @@
 // ===----------------------------------------------------------------------===//
 
 extension Async {
+    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
+    // nesting `Flat` inside produces unusable type paths.
+    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
     /// An asynchronous sequence that concatenates inner sequences produced by a transform.
     ///
     /// `FlatMap` preserves caller isolation — the transform runs on the actor
@@ -18,9 +21,6 @@ extension Async {
     ///
     /// Created by calling `.flatMap(_:)` on any `AsyncSequence`.
     ///
-    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
-    // nesting `Flat` inside produces unusable type paths.
-    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
     public struct FlatMap<Base: AsyncSequence, Segment: AsyncSequence>: AsyncSequence {
         public typealias Element = Segment.Element
 

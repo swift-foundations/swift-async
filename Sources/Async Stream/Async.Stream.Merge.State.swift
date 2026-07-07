@@ -10,13 +10,13 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Column_Primitives
-public import Buffer_Ring_Primitive
-public import Storage_Contiguous_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
+public import Buffer_Ring_Primitive
+public import Column_Primitives
 internal import Memory_Allocator_Primitive
 internal import Memory_Heap_Primitives
+public import Storage_Contiguous_Primitives
 
 extension Async.Stream.Merge {
     /// Internal state for merge operations.

@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
 import Foundation
+import Testing
 
 @Suite("Async.Sequence.Isolation")
 struct AsyncSequenceIsolationTests {
@@ -22,7 +22,8 @@ struct AsyncSequenceIsolationTests {
     func `chained operators return concrete types`() async {
         let source = Produce([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-        let pipeline = source
+        let pipeline =
+            source
             .filter { $0 % 2 == 0 }
             .map { $0 * 3 }
             .compactMap { $0 > 10 ? $0 : nil }
@@ -44,7 +45,8 @@ struct AsyncSequenceIsolationTests {
     func `map into flatMap chains correctly`() async {
         let source = Produce([1, 2, 3])
 
-        let pipeline = source
+        let pipeline =
+            source
             .map { $0 * 2 }
             .flatMap { Produce([$0, $0 + 1]) }
 
@@ -103,7 +105,8 @@ struct AsyncSequenceIsolationTests {
     func `concrete pipeline can be erased to Async.Stream`() async {
         let source = Produce([1, 2, 3, 4, 5])
 
-        let concrete = source
+        let concrete =
+            source
             .filter { $0 % 2 != 0 }
             .map { $0 * 10 }
 
@@ -202,7 +205,8 @@ struct AsyncSequenceIsolationTests {
         nonisolated(unsafe) var mapOnMain = true
         nonisolated(unsafe) var filterOnMain = true
 
-        let pipeline = source
+        let pipeline =
+            source
             .map { value -> Int in
                 if !DispatchQueue.isMain { mapOnMain = false }
                 return value * 2
@@ -230,7 +234,8 @@ struct AsyncSequenceIsolationTests {
         nonisolated(unsafe) var compactMapOnMain = true
         nonisolated(unsafe) var flatMapOnMain = true
 
-        let pipeline = source
+        let pipeline =
+            source
             .filter { value -> Bool in
                 if !DispatchQueue.isMain { filterOnMain = false }
                 return value % 2 == 0

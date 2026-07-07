@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
+import Testing
 
 @Suite("Async.Filter")
 struct AsyncFilterTests {

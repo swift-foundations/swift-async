@@ -10,8 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-public import Ownership_Primitives
 internal import Clocks_Dependency
+public import Ownership_Primitives
 
 extension Async.Stream.Debounce {
     /// Internal state for debounce.

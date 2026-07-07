@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
+import Testing
 
 // TEST-004: Async.Stream<Element> is generic — parallel namespace pattern
 @Suite("Async.Stream")

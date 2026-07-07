@@ -6,19 +6,19 @@
 //
 
 public import Async_Primitives
-public import Ownership_Primitives
-public import Column_Primitives
-public import Buffer_Ring_Primitive
-public import Storage_Contiguous_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
+public import Buffer_Ring_Primitive
+public import Column_Primitives
 internal import Memory_Allocator_Primitive
 internal import Memory_Heap_Primitives
+public import Ownership_Primitives
+public import Storage_Contiguous_Primitives
 
 extension Async.Stream.Transducer {
     /// Actor managing transducer state.
     @usableFromInline
-    actor Run: Sendable {
+    actor Run {
         @usableFromInline
         let box: Async.Stream<Element>.Iterator.Box<Async.Stream<Element>.Iterator>
 

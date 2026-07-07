@@ -10,8 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-internal import Ownership_Primitives
 internal import Clocks_Dependency
+internal import Ownership_Primitives
 
 // MARK: - Timeout
 

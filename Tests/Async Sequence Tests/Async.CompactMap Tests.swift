@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Async
+import Testing
 
 @Suite("Async.CompactMap")
 struct AsyncCompactMapTests {
@@ -75,7 +75,8 @@ struct AsyncCompactMapTests {
     func `chains with map`() async {
         let source = Produce(["1", "two", "3"])
 
-        let pipeline = source
+        let pipeline =
+            source
             .compactMap { Int($0) }
             .map { $0 * 100 }
 
