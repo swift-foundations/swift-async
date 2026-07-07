@@ -99,19 +99,21 @@ struct AsyncSequenceIsolationTests {
         #expect(results == [4, 5])
     }
 
-    // MARK: - Late Erasure to Async.Stream
+    // MARK: - Erasure to Async.Stream
 
     @Test
-    func `concrete pipeline can be erased to Async.Stream`() async {
+    func `sendable source can be erased to Async.Stream and transformed`() async {
+        // Only a Sendable base crosses the Async.Stream erasure boundary:
+        // concrete Async.Filter / Async.Map are intentionally non-Sendable
+        // (they preserve caller isolation and may capture actor-isolated
+        // state). Erase the Sendable source, then compose with the Sendable
+        // Async.Stream operators (which take @Sendable closures).
         let source = Produce([1, 2, 3, 4, 5])
 
-        let concrete =
-            source
+        let stream =
+            Async.Stream(source)
             .filter { $0 % 2 != 0 }
             .map { $0 * 10 }
-
-        // Erase at the boundary
-        let stream = Async.Stream(concrete)
 
         var results: [Int] = []
         for await value in stream {
