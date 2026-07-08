@@ -35,7 +35,7 @@ extension Async.Stream.Transducer {
         var upstreamDone: Bool = false
 
         @inlinable
-        init(
+        package init(
             upstream: Async.Stream<Element>,
             transducer: Async.Stream<Element>.Transducer<Output, State>
         ) {
@@ -48,7 +48,7 @@ extension Async.Stream.Transducer {
 
 extension Async.Stream.Transducer.Run {
     @inlinable
-    func next() async -> Output? {
+    package func next() async -> Output? {
         // Return pending outputs first
         if !queue.isEmpty {
             return queue.dequeue()!

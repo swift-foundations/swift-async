@@ -117,7 +117,7 @@ extension Async.Stream {
     public func forward(to sender: Async.Channel<Element>.Unbounded.Sender) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do {
+                do throws(Async.Channel<Element>.Error) {
                     try sender.send(element)
                 } catch {
                     break forwarding
@@ -141,7 +141,7 @@ extension Async.Stream {
     public func forward(to sender: Async.Channel<Element>.Bounded.Sender) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do {
+                do throws(Async.Channel<Element>.Error) {
                     try await sender.send(element)
                 } catch {
                     break forwarding
