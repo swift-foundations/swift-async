@@ -16,6 +16,9 @@ import Testing
 
 private actor Counter {
     var value = 0
+}
+
+extension Counter {
     func next() -> Int? {
         value += 1
         return value <= 5 ? value : nil
