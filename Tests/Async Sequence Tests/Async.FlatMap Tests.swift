@@ -12,8 +12,8 @@
 import Async
 import Testing
 
-@Suite("Async.FlatMap")
-struct AsyncFlatMapTests {
+@Suite
+struct `Async.FlatMap Tests` {
 
     @Test
     func `flattens inner sequences`() async {

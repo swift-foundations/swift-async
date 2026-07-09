@@ -14,7 +14,7 @@ import Testing
 
 // MARK: - Combination Operator Unit Tests
 
-extension AsyncStreamTests.Unit {
+extension `Async.Stream Tests`.Unit {
 
     // MARK: Merge
 

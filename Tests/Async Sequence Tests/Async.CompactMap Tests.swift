@@ -12,8 +12,8 @@
 import Async
 import Testing
 
-@Suite("Async.CompactMap")
-struct AsyncCompactMapTests {
+@Suite
+struct `Async.CompactMap Tests` {
 
     @Test
     func `transforms and discards nil`() async {

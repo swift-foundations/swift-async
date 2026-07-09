@@ -25,7 +25,7 @@ extension Counter {
     }
 }
 
-extension AsyncStreamTests.Unit {
+extension `Async.Stream Tests`.Unit {
 
     // MARK: Generate
 

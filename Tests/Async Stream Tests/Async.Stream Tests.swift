@@ -13,8 +13,8 @@ import Async
 import Testing
 
 // TEST-004: Async.Stream<Element> is generic — parallel namespace pattern
-@Suite("Async.Stream")
-struct AsyncStreamTests {
+@Suite
+struct `Async.Stream Tests` {
     @Suite struct Unit {}
     @Suite struct EdgeCase {}
     @Suite struct Integration {}
@@ -23,7 +23,7 @@ struct AsyncStreamTests {
 
 // MARK: - Unit Tests
 
-extension AsyncStreamTests.Unit {
+extension `Async.Stream Tests`.Unit {
 
     // MARK: Construction
 

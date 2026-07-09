@@ -12,8 +12,8 @@
 import Async
 import Testing
 
-@Suite("Async.Map")
-struct AsyncMapTests {
+@Suite
+struct `Async.Map Tests` {
 
     @Test
     func `transforms each element`() async {

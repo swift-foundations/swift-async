@@ -15,7 +15,7 @@ import Testing
 
 // MARK: - Temporal Operator Unit Tests
 
-extension AsyncStreamTests.Unit {
+extension `Async.Stream Tests`.Unit {
 
     // MARK: Delay
 

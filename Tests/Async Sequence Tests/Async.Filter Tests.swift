@@ -12,8 +12,8 @@
 import Async
 import Testing
 
-@Suite("Async.Filter")
-struct AsyncFilterTests {
+@Suite
+struct `Async.Filter Tests` {
 
     @Test
     func `includes matching elements`() async {
