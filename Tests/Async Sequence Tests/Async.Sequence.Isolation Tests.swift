@@ -10,8 +10,13 @@
 // ===----------------------------------------------------------------------===//
 
 import Async
-import Foundation
 import Testing
+
+#if canImport(Darwin)
+    import Darwin
+#elseif canImport(Glibc)
+    import Glibc
+#endif
 
 @Suite("Async.Sequence.Isolation")
 struct AsyncSequenceIsolationTests {
@@ -127,11 +132,12 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `sync closure in map runs on caller actor`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3])
         nonisolated(unsafe) var allOnMain = true
 
         let mapped = source.map { value -> Int in
-            if !DispatchQueue.isMain { allOnMain = false }
+            if currentThreadID() != mainThreadID { allOnMain = false }
             return value * 2
         }
 
@@ -146,11 +152,12 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `sync closure in filter runs on caller actor`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3, 4, 5])
         nonisolated(unsafe) var allOnMain = true
 
         let filtered = source.filter { value -> Bool in
-            if !DispatchQueue.isMain { allOnMain = false }
+            if currentThreadID() != mainThreadID { allOnMain = false }
             return value > 3
         }
 
@@ -165,11 +172,12 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `sync closure in compactMap runs on caller actor`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce(["1", "two", "3", "four", "5"])
         nonisolated(unsafe) var allOnMain = true
 
         let compacted = source.compactMap { value -> Int? in
-            if !DispatchQueue.isMain { allOnMain = false }
+            if currentThreadID() != mainThreadID { allOnMain = false }
             return Int(value)
         }
 
@@ -184,11 +192,12 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `sync closure in flatMap runs on caller actor`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3])
         nonisolated(unsafe) var allOnMain = true
 
         let flat = source.flatMap { value -> Produce<Int> in
-            if !DispatchQueue.isMain { allOnMain = false }
+            if currentThreadID() != mainThreadID { allOnMain = false }
             return Produce([value, value * 10])
         }
 
@@ -203,6 +212,7 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `chained sync closures preserve isolation through pipeline`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3, 4, 5])
         nonisolated(unsafe) var mapOnMain = true
         nonisolated(unsafe) var filterOnMain = true
@@ -210,11 +220,11 @@ struct AsyncSequenceIsolationTests {
         let pipeline =
             source
             .map { value -> Int in
-                if !DispatchQueue.isMain { mapOnMain = false }
+                if currentThreadID() != mainThreadID { mapOnMain = false }
                 return value * 2
             }
             .filter { value -> Bool in
-                if !DispatchQueue.isMain { filterOnMain = false }
+                if currentThreadID() != mainThreadID { filterOnMain = false }
                 return value > 4
             }
 
@@ -230,6 +240,7 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `full pipeline preserves isolation through all four operators`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3, 4, 5, 6])
         nonisolated(unsafe) var filterOnMain = true
         nonisolated(unsafe) var mapOnMain = true
@@ -239,19 +250,19 @@ struct AsyncSequenceIsolationTests {
         let pipeline =
             source
             .filter { value -> Bool in
-                if !DispatchQueue.isMain { filterOnMain = false }
+                if currentThreadID() != mainThreadID { filterOnMain = false }
                 return value % 2 == 0
             }
             .map { value -> Int in
-                if !DispatchQueue.isMain { mapOnMain = false }
+                if currentThreadID() != mainThreadID { mapOnMain = false }
                 return value * 10
             }
             .compactMap { value -> Int? in
-                if !DispatchQueue.isMain { compactMapOnMain = false }
+                if currentThreadID() != mainThreadID { compactMapOnMain = false }
                 return value > 20 ? value : nil
             }
             .flatMap { value -> Produce<Int> in
-                if !DispatchQueue.isMain { flatMapOnMain = false }
+                if currentThreadID() != mainThreadID { flatMapOnMain = false }
                 return Produce([value, value + 1])
             }
 
@@ -272,12 +283,13 @@ struct AsyncSequenceIsolationTests {
 
     @Test @MainActor
     func `stdlib AsyncMapSequence does not preserve caller isolation`() async {
+        let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3])
         nonisolated(unsafe) var allOnMain = true
 
         // Force stdlib's async map by using an async closure
         let mapped: AsyncMapSequence<Produce<Int>, Int> = source.map { value -> Int in
-            if !DispatchQueue.isMain { allOnMain = false }
+            if currentThreadID() != mainThreadID { allOnMain = false }
             return value * 2
         }
 
@@ -293,8 +305,20 @@ struct AsyncSequenceIsolationTests {
 
 // MARK: - Helpers
 
-extension DispatchQueue {
-    fileprivate static var isMain: Bool {
-        Thread.isMainThread
-    }
+/// Identity of the current thread, for caller-actor preservation probes.
+///
+/// `Thread.isMainThread` is a valid MainActor proxy only on Darwin: on Linux
+/// the MainActor executor does not run on the thread corelibs-foundation
+/// reports as "main" — a bare `@MainActor` swift-testing body reports
+/// `isMainThread == false` there while `MainActor.preconditionIsolated()`
+/// passes (verified in Docker swift:6.3, 2026-07-11). Probing thread identity
+/// against the MainActor thread captured in the test body is platform-neutral:
+/// the MainActor executor is a single fixed thread on both platforms, so the
+/// captured identity is stable across suspension points.
+private func currentThreadID() -> UInt {
+    #if canImport(Darwin)
+        UInt(pthread_mach_thread_np(pthread_self()))
+    #else
+        UInt(pthread_self())
+    #endif
 }
