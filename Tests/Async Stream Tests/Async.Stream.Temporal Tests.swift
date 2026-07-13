@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Async
-import Clocks_Dependency
+import Clocks_Dependencies
 import Testing
 
 // MARK: - Temporal Operator Unit Tests

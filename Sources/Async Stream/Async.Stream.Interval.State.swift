@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-internal import Clocks_Dependency
+internal import Clocks_Dependencies
 
 extension Async.Stream.Interval where Element == Int {
     /// Internal state for interval stream.

@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-internal import Clocks_Dependency
+internal import Clocks_Dependencies
 
 extension Async.Stream.Repeat.Interval {
     /// Internal state for repeat with interval stream.

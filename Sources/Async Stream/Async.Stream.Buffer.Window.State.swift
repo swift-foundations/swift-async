@@ -14,7 +14,7 @@ internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
 public import Buffer_Ring_Primitive
 public import Clocks
-internal import Clocks_Dependency
+internal import Clocks_Dependencies
 public import Column_Primitives
 internal import Memory_Allocator_Primitive
 internal import Memory_Heap_Primitives

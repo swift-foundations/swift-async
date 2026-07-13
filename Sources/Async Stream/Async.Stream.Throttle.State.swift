@@ -11,7 +11,7 @@
 
 public import Async_Primitives
 public import Clock_Primitives
-internal import Clocks_Dependency
+internal import Clocks_Dependencies
 public import Ownership_Primitives
 
 extension Async.Stream.Throttle {

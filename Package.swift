@@ -38,7 +38,8 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-reference-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-clocks.git", branch: "main"),
-        .package(url: "https://github.com/swift-foundations/swift-dependencies.git", branch: "main", traits: ["Clocks"]),
+        .package(url: "https://github.com/swift-foundations/swift-dependencies.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-clocks-dependencies.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-storage-primitives.git", branch: "main"),
     ],
@@ -73,7 +74,7 @@ let package = Package(
                 .product(name: "Buffer Ring Bounded Primitive", package: "swift-buffer-ring-primitives"),
                 "Async Stream Core",
                 .product(name: "Buffer Ring Primitives", package: "swift-buffer-ring-primitives"),
-                .product(name: "Clocks Dependency", package: "swift-dependencies"),
+                .product(name: "Clocks Dependencies", package: "swift-clocks-dependencies"),
                 .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Storage Contiguous Primitives", package: "swift-storage-primitives"),
@@ -109,7 +110,7 @@ let package = Package(
             name: "Async Stream Tests",
             dependencies: [
                 "Async Test Support",
-                .product(name: "Clocks Dependency", package: "swift-dependencies"),
+                .product(name: "Clocks Dependencies", package: "swift-clocks-dependencies"),
             ]
         )
     ],
