@@ -81,4 +81,15 @@ extension Async.Stream.Replay.State {
     func unsubscribe(_ subscription: Async.Stream<Element>.Replay.Subscription) {
         subscriptions.removeAll { $0 === subscription }
     }
+
+    /// Testing hook (F-003 regression coverage): the number of
+    /// currently-registered subscriptions. Not part of the public API;
+    /// exposed to the package's Tests target only via the `@Sendable`
+    /// closure returned from `Async.Stream.replayForTesting(bufferSize:)`,
+    /// which keeps this internal `State` type itself out of any `package`
+    /// -level signature.
+    @usableFromInline
+    var subscriptionCount: Int {
+        subscriptions.count
+    }
 }

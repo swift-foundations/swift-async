@@ -36,24 +36,39 @@ extension Async.Stream {
     /// - Parameter bufferSize: Maximum number of elements to buffer.
     /// - Returns: A stream that replays buffered elements to new subscribers.
     public func replay(bufferSize: Int) -> Self {
+        replayForTesting(bufferSize: bufferSize).stream
+    }
+
+    /// Package-visible testing hook (F-003 regression coverage): identical to
+    /// `replay(bufferSize:)`, but also returns a closure that reports the
+    /// current subscription count, so tests can assert on subscription-list
+    /// cleanup without the internal `State` type itself appearing in a
+    /// `package`-level signature. Not part of the public API.
+    package func replayForTesting(bufferSize: Int) -> (stream: Self, subscriptionCount: @Sendable () async -> Int) {
         let state = Async.Stream<Element>.Replay.State(bufferSize: bufferSize)
 
-        // Start forwarding upstream
-        Task { [self] in
+        // Start forwarding upstream. F-002: the task handle is retained via
+        // `Connection` instead of discarded — see
+        // Async.Stream.Replay.Connection.swift.
+        let forwardingTask = Task { [self] in
             await state.run { state in
                 for await element in self {
-                    state.send(element)
+                    // F-004: awaited so per-subscription delivery order
+                    // matches call order — see Async.Stream.Replay.State.swift.
+                    await state.send(element)
                 }
-                state.finish()
+                await state.finish()
             }
         }
+        let connection = Async.Stream<Element>.Replay.Connection(forwardingTask)
 
-        return Self {
+        let stream = Self {
             // Create a cursor that lazily subscribes on first next() call
-            let wrapper = Async.Stream<Element>.Replay.Cursor(state: state)
+            let wrapper = Async.Stream<Element>.Replay.Cursor(state: state, connection: connection)
             return Iterator {
                 await wrapper.next()
             }
         }
+        return (stream, { await state.subscriptionCount })
     }
 }
