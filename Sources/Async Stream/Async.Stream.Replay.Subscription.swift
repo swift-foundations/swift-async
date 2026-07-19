@@ -41,13 +41,12 @@ extension Async.Stream.Replay {
 }
 
 extension Async.Stream.Replay.Subscription {
+    // F-004: plain actor-isolated methods, called with a direct `await` from
+    // `Replay.State.send`/`.finish`'s sequential loop — see the comment
+    // there. No longer `nonisolated` and no longer spawns its own Task: that
+    // extra unstructured hop was the source of the ordering bug.
     @usableFromInline
-    nonisolated func receive(_ element: sending Element) {
-        Task { await _receive(element) }
-    }
-
-    @usableFromInline
-    func _receive(_ element: sending Element) {
+    func receive(_ element: sending Element) {
         if let cont = continuation {
             continuation = nil
             cont.resume(returning: element)
@@ -57,12 +56,7 @@ extension Async.Stream.Replay.Subscription {
     }
 
     @usableFromInline
-    nonisolated func finish() {
-        Task { await _finish() }
-    }
-
-    @usableFromInline
-    func _finish() {
+    func finish() {
         finished = true
         if let cont = continuation {
             continuation = nil
