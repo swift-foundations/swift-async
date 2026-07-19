@@ -10,9 +10,13 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-internal import Ownership_Primitives
 
 // MARK: - Share
+
+extension Async.Stream {
+    /// Namespace for share() internals.
+    public enum Share {}
+}
 
 extension Async.Stream {
     /// Shares a single subscription among multiple consumers.
@@ -32,21 +36,15 @@ extension Async.Stream {
     ///
     /// - Returns: A shared stream backed by Broadcast.
     public func share() -> Self {
-        let broadcast = Async.Broadcast<Element>()
-
-        // Start forwarding
-        Task { [self] in
-            for await element in self {
-                broadcast.send(element)
-            }
-            broadcast.finish()
-        }
+        // F-002: forwarding-task lifetime now lives on `Share.State`, which
+        // every consumer's `Share.Cursor` retains — see
+        // Async.Stream.Share.State.swift and Async.Stream.Share.Cursor.swift.
+        let state = Async.Stream<Element>.Share.State(upstream: self)
 
         return Self {
-            let subscription = broadcast.subscribe()
-            let box = Async.Stream<Element>.Iterator.Box(subscription.makeAsyncIterator())
+            let cursor = Async.Stream<Element>.Share.Cursor(state: state)
             return Iterator {
-                await box.next()
+                await cursor.next()
             }
         }
     }

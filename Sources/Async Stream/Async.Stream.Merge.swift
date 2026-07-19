@@ -60,13 +60,12 @@ extension Async.Stream.Merge {
                 }
             }
 
+            // F-002: producer-task cancellation now also has a deinit
+            // backstop — see Async.Stream.Merge.Cursor.swift.
+            let cursor = Async.Stream<Element>.Merge.Cursor(state: state, task1: task1, task2: task2)
+
             return Async.Stream<Element>.Iterator {
-                let result = await state.receive()
-                if result == nil {
-                    task1.cancel()
-                    task2.cancel()
-                }
-                return result
+                await cursor.next()
             }
         }
     }
