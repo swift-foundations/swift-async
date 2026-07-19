@@ -249,4 +249,85 @@ extension `Async.Stream Tests`.EdgeCase {
         // its pre-fix evidence was captured.)
         #expect(results == Array(0..<count))
     }
+
+    /// Stronger companion to the test above, targeting F-004's live-delivery
+    /// path directly. Unlike that test it subscribes *before* any element is
+    /// produced — via the `replayForTesting` subscription-count hook — so every
+    /// element travels the live `State.send` -> `Subscription.receive` path
+    /// (F-004's actual mechanism) rather than the late-subscriber ring
+    /// backfill, then drives a large burst as fast as possible and asserts the
+    /// consumer observes strict send order with no drops.
+    ///
+    /// Post-fix this is DETERMINISTIC: `send`/`finish` `await` the
+    /// actor-isolated `receive`/`finish` inline in the single sequential
+    /// producer loop — there is no unstructured Task in the delivery path at
+    /// all — so delivery order equals send order and nothing is dropped, on
+    /// every run. Pre-F-004 (`Subscription.receive`/`finish` each spawn an
+    /// unstructured `Task { await _receive(element) }`), the same burst is a
+    /// best-effort discriminator, NOT a guaranteed one: Swift does not
+    /// guarantee spawn order == actor-enqueue order for concurrently created
+    /// Tasks, so elements *can* be delivered reordered, or `finish` *can*
+    /// resume the consumer with `nil` before pending deliveries run
+    /// (truncation) — but whether that window opens on a given run is
+    /// scheduler-dependent and does not reproduce reliably on a loaded machine.
+    /// See `O/remediation/swift-async/REPORT.md` (d)/(g) for why a deterministic
+    /// pre-fix repro is not reachable without injecting a controllable executor
+    /// into the (approved, unmodified) fix source, and why the primary F-004
+    /// evidence is the code-level soundness of the synchronous ordered-delivery
+    /// fix plus the deterministic F-001/F-002/F-003 regressions.
+    @Test(.timeLimit(.minutes(2)))
+    func `replay delivers a fast pre-subscribed burst in strict send order with no drops`() async throws {
+        let elementCount = 2_000
+        let trialCount = 5
+
+        for trial in 0..<trialCount {
+            let (raw, continuation) = AsyncStream<Int>.makeStream()
+            // Ring sized to hold the whole burst: this keeps the POST-FIX
+            // assertion timing-independent (a consumer that registers late
+            // still reconstructs the full ordered sequence from the ring
+            // backfill, so the test cannot flake green->red under load), while
+            // the pre-subscribe poll below still tries to hit the live
+            // `send`->`receive` path that is F-004's actual mechanism.
+            let (replayed, subscriptionCount) = Async.Stream(raw).replayForTesting(bufferSize: elementCount)
+
+            let consumer = Task<[Int], Never> {
+                var results: [Int] = []
+                results.reserveCapacity(elementCount)
+                for await value in replayed {
+                    results.append(value)
+                }
+                return results
+            }
+
+            // Best-effort: wait for the consumer to register before producing,
+            // so elements travel the live-delivery path (F-004's mechanism)
+            // rather than the ring backfill. Correctness does not depend on
+            // this succeeding — the full-size ring above covers the late case.
+            for _ in 0..<200 {
+                if await subscriptionCount() >= 1 { break }
+                try? await Task.sleep(for: .milliseconds(5))
+            }
+
+            // Drive the whole burst as fast as possible, then finish.
+            for value in 0..<elementCount {
+                continuation.yield(value)
+            }
+            continuation.finish()
+
+            // withDeadline guards against a pre-fix hang; post-fix the consumer
+            // finishes well inside it.
+            let results = await withDeadline(.seconds(60)) { await consumer.value }
+            let expected = Array(0..<elementCount)
+
+            if let results {
+                let firstBad = zip(results, expected).enumerated().first { _, pair in pair.0 != pair.1 }?.offset
+                let detail = firstBad.map { " (first divergence @\($0): \(results[$0]) != \(expected[$0]))" }
+                    ?? " (length mismatch)"
+                let message = "trial \(trial): got \(results.count)/\(expected.count) elements" + detail
+                #expect(results == expected, Comment(rawValue: message))
+            } else {
+                #expect(Bool(false), Comment(rawValue: "trial \(trial): consumer did not finish within the deadline"))
+            }
+        }
+    }
 }
