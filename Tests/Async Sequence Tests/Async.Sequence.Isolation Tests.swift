@@ -18,8 +18,8 @@ import Testing
     import Glibc
 #endif
 
-@Suite("Async.Sequence.Isolation")
-struct AsyncSequenceIsolationTests {
+@Suite
+struct Test {
 
     // MARK: - Type Identity (Chained)
 
