@@ -69,7 +69,7 @@ private func withDeadline<T: Sendable>(
     }
 }
 
-extension `Async.Stream Tests`.EdgeCase {
+extension `Async.Stream Tests`.`Edge Case` {
 
     // MARK: F-001 — continuation-cancellation hangs (blocker)
 
