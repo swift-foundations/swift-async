@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import StandardsCollections
+public import Collection_Primitives
 
 extension Async.Channel.Unbounded {
     /// Pure state machine for unbounded channel operations.

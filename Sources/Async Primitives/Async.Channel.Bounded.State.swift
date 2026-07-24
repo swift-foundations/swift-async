@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import StandardsCollections
+public import Collection_Primitives
 
 extension Async.Channel.Bounded {
     /// Pure state machine for bounded channel operations.

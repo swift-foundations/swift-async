@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-internal import StandardsCollections
+internal import Collection_Primitives
 
 extension Async.Channel.Bounded {
     /// A sender handle for a bounded channel.

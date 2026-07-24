@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Async_Primitives
-import StandardsTestSupport
+import Test_Primitives
 import Testing
 
 /// Test namespace for Async.Publication (generic type requires wrapper for #TestSuites).

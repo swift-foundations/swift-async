@@ -22,18 +22,20 @@ let package = Package(
         .library(
             name: "Async Stream",
             targets: ["Async Stream"]
-        ),
+        )
     ],
     dependencies: [
         .package(path: "../swift-buffer"),
-        .package(path: "../../swift-standards/swift-standards")
+        .package(path: "../../swift-primitives/swift-collection-primitives"),
+        .package(path: "../../swift-primitives/swift-dimension-primitives"),
+        .package(path: "../../swift-primitives/swift-test-primitives")
     ],
     targets: [
         .target(
             name: "Async Primitives",
             dependencies: [
-                .product(name: "StandardsCollections", package: "swift-standards"),
-                .product(name: "Dimension", package: "swift-standards"),
+                .product(name: "Collection Primitives", package: "swift-collection-primitives"),
+                .product(name: "Dimension Primitives", package: "swift-dimension-primitives")
             ],
             path: "Sources/Async Primitives"
         ),
@@ -41,7 +43,7 @@ let package = Package(
             name: "Async Stream",
             dependencies: [
                 "Async Primitives",
-                .product(name: "Buffer", package: "swift-buffer"),
+                .product(name: "Buffer", package: "swift-buffer")
             ],
             path: "Sources/Async Stream"
         ),
@@ -49,7 +51,7 @@ let package = Package(
             name: "Async",
             dependencies: [
                 "Async Primitives",
-                "Async Stream",
+                "Async Stream"
             ],
             path: "Sources/Async"
         ),
@@ -57,7 +59,7 @@ let package = Package(
             name: "Async Primitives Tests",
             dependencies: [
                 "Async Primitives",
-                .product(name: "StandardsTestSupport", package: "swift-standards")
+                .product(name: "Test Primitives", package: "swift-test-primitives")
             ],
             path: "Tests/Async Primitives Tests"
         ),
@@ -65,10 +67,10 @@ let package = Package(
             name: "Async Stream Tests",
             dependencies: [
                 "Async Stream",
-                .product(name: "StandardsTestSupport", package: "swift-standards")
+                .product(name: "Test Primitives", package: "swift-test-primitives")
             ],
             path: "Tests/Async Stream Tests"
-        ),
+        )
     ]
 )
 

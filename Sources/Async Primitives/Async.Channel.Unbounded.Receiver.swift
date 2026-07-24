@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-internal import StandardsCollections
+internal import Collection_Primitives
 
 extension Async.Channel.Unbounded {
     /// A receiver for an unbounded channel.

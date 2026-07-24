@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import StandardsCollections
+import Collection_Primitives
 import Synchronization
 
 extension Async {

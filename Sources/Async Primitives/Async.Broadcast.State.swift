@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import StandardsCollections
+import Collection_Primitives
 
 extension Async.Broadcast {
     /// Internal state machine for the broadcast channel.

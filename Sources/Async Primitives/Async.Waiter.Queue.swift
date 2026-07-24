@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import StandardsCollections
+public import Collection_Primitives
 public import Dimension
 
 extension Async.Waiter {
