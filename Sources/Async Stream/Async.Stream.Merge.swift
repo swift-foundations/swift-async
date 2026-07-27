@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream {
     /// Merge operations namespace.
@@ -42,26 +43,29 @@ extension Async.Stream.Merge {
 
             // Start both streams
             let task1 = Task {
-                for await element in a {
-                    await state.send(element)
+                await state.run { state in
+                    for await element in a {
+                        state.send(element)
+                    }
+                    state.complete()
                 }
-                await state.complete()
             }
 
             let task2 = Task {
-                for await element in b {
-                    await state.send(element)
+                await state.run { state in
+                    for await element in b {
+                        state.send(element)
+                    }
+                    state.complete()
                 }
-                await state.complete()
             }
 
+            // F-002: producer-task cancellation now also has a deinit
+            // backstop — see Async.Stream.Merge.Cursor.swift.
+            let cursor = Async.Stream<Element>.Merge.Cursor(state: state, task1: task1, task2: task2)
+
             return Async.Stream<Element>.Iterator {
-                let result = await state.receive()
-                if result == nil {
-                    task1.cancel()
-                    task2.cancel()
-                }
-                return result
+                await cursor.next()
             }
         }
     }

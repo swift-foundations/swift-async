@@ -10,6 +10,16 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+public import Buffer_Ring_Primitive
+public import Clocks
+internal import Clocks_Dependencies
+public import Column_Primitives
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
+public import Ownership_Primitives
+public import Storage_Contiguous_Primitives
 
 extension Async.Stream.Buffer.Time {
     /// Internal state for time-based buffering.
@@ -22,7 +32,7 @@ extension Async.Stream.Buffer.Time {
         let duration: Duration
 
         @usableFromInline
-        var buffer: [Element] = []
+        var queue: Queue<Element> = .init()
 
         @usableFromInline
         var upstreamDone: Bool = false
@@ -38,18 +48,21 @@ extension Async.Stream.Buffer.Time {
 extension Async.Stream.Buffer.Time.State {
     @usableFromInline
     func next() async -> [Element]? {
+        @Dependency(\.clock) var clock
+        let resolvedClock = clock
         if upstreamDone {
             return nil
         }
 
-        let deadline = ContinuousClock.now + duration
+        let deadline = resolvedClock.now.advanced(by: duration)
 
         while true {
-            let remaining = deadline - ContinuousClock.now
+            let now = resolvedClock.now
+            let remaining = now.duration(to: deadline)
             if remaining <= .zero {
                 // Time window expired
-                let result = buffer
-                buffer = []
+                var result: [Element] = []
+                queue.drain { result.append($0) }
                 if result.isEmpty && upstreamDone {
                     return nil
                 }
@@ -67,7 +80,7 @@ extension Async.Stream.Buffer.Time.State {
                 }
 
                 group.addTask {
-                    try? await Task.sleep(for: remaining)
+                    try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: remaining))
                     return .timerExpired
                 }
 
@@ -80,18 +93,18 @@ extension Async.Stream.Buffer.Time.State {
 
             switch result {
             case .element(let element):
-                buffer.append(element)
+                queue.enqueue(element)
 
             case .timerExpired:
-                let result = buffer
-                buffer = []
+                var result: [Element] = []
+                queue.drain { result.append($0) }
                 return result
 
             case .upstreamComplete:
                 upstreamDone = true
-                if !buffer.isEmpty {
-                    let result = buffer
-                    buffer = []
+                if !queue.isEmpty {
+                    var result: [Element] = []
+                    queue.drain { result.append($0) }
                     return result
                 }
                 return nil

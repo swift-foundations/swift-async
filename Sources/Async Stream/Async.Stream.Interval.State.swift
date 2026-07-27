@@ -10,11 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-
-extension Async.Stream {
-    /// Namespace for interval operations.
-    public enum Interval {}
-}
+internal import Clocks_Dependencies
 
 extension Async.Stream.Interval where Element == Int {
     /// Internal state for interval stream.
@@ -39,41 +35,16 @@ extension Async.Stream.Interval where Element == Int {
 extension Async.Stream.Interval.State {
     @usableFromInline
     func next() async -> Int? {
+        @Dependency(\.clock) var clock
         if Task.isCancelled { return nil }
 
         if started {
-            try? await Task.sleep(for: duration)
+            try? await clock.sleep(for: duration)
             if Task.isCancelled { return nil }
         }
         started = true
 
         defer { count += 1 }
         return count
-    }
-}
-
-// MARK: - Interval Method
-
-extension Async.Stream where Element == Int {
-    /// Creates a stream that emits sequential integers at regular intervals.
-    ///
-    /// Starts emitting immediately with 0, then increments after each interval.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// for await tick in Async.Stream.interval(.seconds(1)) {
-    ///     print("Tick \(tick)")  // 0, 1, 2, 3...
-    /// }
-    /// ```
-    ///
-    /// - Parameter duration: The interval between emissions.
-    /// - Returns: A stream that emits 0, 1, 2, ... at each interval.
-    public static func interval(_ duration: Duration) -> Self {
-        Self {
-            let state = Async.Stream<Int>.Interval.State(duration: duration)
-            return Iterator {
-                await state.next()
-            }
-        }
     }
 }

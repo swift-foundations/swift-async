@@ -10,11 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
-
-extension Async.Stream {
-    /// Namespace for last operation.
-    public enum Last {}
-}
+public import Ownership_Primitives
 
 extension Async.Stream.Last {
     /// Internal state for last.
@@ -48,38 +44,5 @@ extension Async.Stream.Last.State {
 
         done = true
         return lastElement
-    }
-}
-
-// MARK: - Last Methods
-
-extension Async.Stream {
-    /// Collects and emits only the last element.
-    ///
-    /// Note: This consumes the entire stream before emitting.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let last = stream.last()
-    /// ```
-    ///
-    /// - Returns: A stream that emits only the last element.
-    public func last() -> Self {
-        Self { [self] in
-            let state = Async.Stream<Element>.Last.State(stream: self)
-            return Iterator {
-                await state.next()
-            }
-        }
-    }
-
-    /// Collects and emits only the last element matching predicate.
-    ///
-    /// - Parameter predicate: A function to test elements.
-    /// - Returns: A stream that emits the last matching element.
-    public func last(
-        where predicate: @escaping @Sendable (Element) -> Bool
-    ) -> Self {
-        filter(predicate).last()
     }
 }

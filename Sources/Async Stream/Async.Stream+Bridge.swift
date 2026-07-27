@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Ownership_Primitives
 
 // MARK: - From Broadcast
 
@@ -85,16 +86,14 @@ extension Async.Stream {
     /// let stream = Async.Stream(from: receiver)
     /// ```
     ///
-    /// - Parameter receiver: The receiver to read from.
+    /// - Parameter receiver: The receiver to read from (consumed).
     /// - Returns: A stream that emits channel elements.
-    public init(from receiver: Async.Channel<Element>.Bounded.Receiver) {
+    public init(from receiver: consuming Async.Channel<Element>.Bounded.Receiver) {
+        let elements = receiver.elements
         self.init {
-            Iterator {
-                do {
-                    return try await receiver.receive()
-                } catch {
-                    return nil
-                }
+            let box = Async.Stream<Element>.Iterator.Box(elements.makeAsyncIterator())
+            return Iterator {
+                await box.next()
             }
         }
     }
@@ -118,7 +117,7 @@ extension Async.Stream {
     public func forward(to sender: Async.Channel<Element>.Unbounded.Sender) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do {
+                do throws(Async.Channel<Element>.Error) {
                     try sender.send(element)
                 } catch {
                     break forwarding
@@ -142,7 +141,7 @@ extension Async.Stream {
     public func forward(to sender: Async.Channel<Element>.Bounded.Sender) -> Task<Void, Never> {
         Task {
             forwarding: for await element in self {
-                do {
+                do throws(Async.Channel<Element>.Error) {
                     try await sender.send(element)
                 } catch {
                     break forwarding
@@ -189,8 +188,12 @@ extension Async.Broadcast {
     }
 }
 
-extension Async.Channel.Unbounded.Receiver {
+extension Async.Channel.Unbounded.Receiver where Element: Sendable {
     /// Creates a stream from this receiver (consumes the receiver).
+    ///
+    /// Requires `Element: Sendable` because `Async.Stream` is a Sendable,
+    /// type-erased async sequence. For non-Sendable elements, use
+    /// `receiver.elements` directly.
     ///
     /// ## Usage
     /// ```swift
@@ -202,15 +205,19 @@ extension Async.Channel.Unbounded.Receiver {
     }
 }
 
-extension Async.Channel.Bounded.Receiver {
-    /// Creates a stream from this receiver.
+extension Async.Channel.Bounded.Receiver where Element: Sendable {
+    /// Creates a stream from this receiver (consumes the receiver).
+    ///
+    /// Requires `Element: Sendable` because `Async.Stream` is a Sendable,
+    /// type-erased async sequence. For non-Sendable elements, use
+    /// `receiver.elements` directly.
     ///
     /// ## Usage
     /// ```swift
     /// let (sender, receiver) = Async.Channel<Int>.Bounded.create(capacity: 10)
-    /// let stream = receiver.stream
+    /// let stream = receiver.stream()
     /// ```
-    public var stream: Async.Stream<Element> {
-        Async.Stream(from: self)
+    public consuming func stream() -> Async.Stream<Element> {
+        Async.Stream(from: consume self)
     }
 }

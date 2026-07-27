@@ -11,11 +11,6 @@
 
 public import Async_Primitives
 
-extension Async.Stream {
-    /// Namespace for debounce operations.
-    public enum Debounce {}
-}
-
 extension Async.Stream.Debounce {
     /// Events used internally by debounce state.
     @usableFromInline

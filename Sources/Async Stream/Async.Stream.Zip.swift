@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+internal import Ownership_Primitives
 
 extension Async.Stream {
     /// Zip operations namespace.

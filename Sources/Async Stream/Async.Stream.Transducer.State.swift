@@ -1,0 +1,101 @@
+//
+//  Async.Stream.Transducer.State.swift
+//  swift-async
+//
+//  Actor managing transducer state for async stream transformation.
+//
+
+public import Async_Primitives
+internal import Buffer_Primitive
+internal import Buffer_Ring_Bounded_Primitive
+public import Buffer_Ring_Primitive
+public import Column_Primitives
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
+public import Ownership_Primitives
+public import Storage_Contiguous_Primitives
+
+extension Async.Stream.Transducer {
+    /// Actor managing transducer state.
+    @usableFromInline
+    actor Run {
+        @usableFromInline
+        let box: Async.Stream<Element>.Iterator.Box<Async.Stream<Element>.Iterator>
+
+        @usableFromInline
+        let transducer: Async.Stream<Element>.Transducer<Output, State>
+
+        @usableFromInline
+        var state: State
+
+        @usableFromInline
+        var queue: Queue<Output> = .init()
+
+        @usableFromInline
+        var upstreamDone: Bool = false
+
+        @inlinable
+        package init(
+            upstream: Async.Stream<Element>,
+            transducer: Async.Stream<Element>.Transducer<Output, State>
+        ) {
+            self.box = Async.Stream<Element>.Iterator.Box(upstream.makeAsyncIterator())
+            self.transducer = transducer
+            self.state = transducer.initial()
+        }
+    }
+}
+
+extension Async.Stream.Transducer.Run {
+    @inlinable
+    package func next() async -> Output? {
+        // Return pending outputs first
+        if !queue.isEmpty {
+            return queue.dequeue()!
+        }
+
+        // Step more input
+        while !upstreamDone {
+            guard let element = await box.next() else {
+                upstreamDone = true
+                // Complete - flush remaining
+                let finals = transducer.complete(&state)
+                if !finals.isEmpty {
+                    for output in finals.dropFirst() { queue.enqueue(output) }
+                    return finals.first
+                }
+                return nil
+            }
+
+            let outputs = transducer.step(element, &state)
+            if !outputs.isEmpty {
+                for output in outputs.dropFirst() { queue.enqueue(output) }
+                return outputs.first
+            }
+        }
+
+        return nil
+    }
+}
+
+// MARK: - Async.Stream Extension
+
+extension Async.Stream {
+    /// Transforms stream elements using a transducer.
+    ///
+    /// - Parameter transducer: The transducer to process elements.
+    /// - Returns: Stream of transformed outputs.
+    public func transduce<Output: Sendable, State: Sendable>(
+        with transducer: Transducer<Output, State>
+    ) -> Async.Stream<Output> {
+        Async.Stream<Output> { [self] in
+            let run = Async.Stream<Element>.Transducer<Output, State>.Run(
+                upstream: self,
+                transducer: transducer
+            )
+            return Async.Stream<Output>.Iterator {
+                await run.next()
+            }
+        }
+    }
+}

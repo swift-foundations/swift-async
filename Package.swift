@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.3.3
 
 import PackageDescription
 
@@ -8,7 +8,8 @@ let package = Package(
         .macOS(.v26),
         .iOS(.v26),
         .tvOS(.v26),
-        .watchOS(.v26)
+        .watchOS(.v26),
+        .visionOS(.v26)
     ],
     products: [
         .library(
@@ -16,69 +17,121 @@ let package = Package(
             targets: ["Async"]
         ),
         .library(
-            name: "Async Primitives",
-            targets: ["Async Primitives"]
+            name: "Async Sequence",
+            targets: ["Async Sequence"]
         ),
         .library(
             name: "Async Stream",
             targets: ["Async Stream"]
-        )
+        ),
+        .library(
+            name: "Async Test Support",
+            targets: ["Async Test Support"]
+        ),
     ],
     dependencies: [
-        .package(path: "../swift-buffer"),
-        .package(path: "../../swift-primitives/swift-collection-primitives"),
-        .package(path: "../../swift-primitives/swift-dimension-primitives"),
-        .package(path: "../../swift-primitives/swift-test-primitives")
+        .package(url: "https://github.com/swift-primitives/swift-async-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-column-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-buffer-ring-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-buffer-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-queue-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-reference-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-clocks.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-dependencies.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-clocks-dependencies.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-heap-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-storage-primitives.git", branch: "main"),
     ],
     targets: [
         .target(
-            name: "Async Primitives",
+            name: "Async Sequence",
             dependencies: [
-                .product(name: "Collection Primitives", package: "swift-collection-primitives"),
-                .product(name: "Dimension Primitives", package: "swift-dimension-primitives")
-            ],
-            path: "Sources/Async Primitives"
+                .product(name: "Async Primitives", package: "swift-async-primitives"),
+            ]
         ),
+
+        // MARK: - Async Stream Core (internal-only)
+
+        .target(
+            name: "Async Stream Core",
+            dependencies: [
+                .product(name: "Async Primitives", package: "swift-async-primitives"),
+                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
+                .product(name: "Queue Primitives", package: "swift-queue-primitives"),
+                .product(name: "Clocks", package: "swift-clocks"),
+                .product(name: "Reference Primitives", package: "swift-reference-primitives"),
+            ]
+        ),
+
+        // MARK: - Async Stream
+
         .target(
             name: "Async Stream",
             dependencies: [
-                "Async Primitives",
-                .product(name: "Buffer", package: "swift-buffer")
-            ],
-            path: "Sources/Async Stream"
+                .product(name: "Column Primitives", package: "swift-column-primitives"),
+                .product(name: "Buffer Ring Primitive", package: "swift-buffer-ring-primitives"),
+                .product(name: "Buffer Ring Bounded Primitive", package: "swift-buffer-ring-primitives"),
+                "Async Stream Core",
+                .product(name: "Buffer Ring Primitives", package: "swift-buffer-ring-primitives"),
+                .product(name: "Clocks Dependencies", package: "swift-clocks-dependencies"),
+                .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
+                .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
+                .product(name: "Storage Contiguous Primitives", package: "swift-storage-primitives"),
+            ]
         ),
+
         .target(
             name: "Async",
             dependencies: [
-                "Async Primitives",
-                "Async Stream"
-            ],
-            path: "Sources/Async"
+                "Async Sequence",
+                "Async Stream",
+            ]
         ),
-        .testTarget(
-            name: "Async Primitives Tests",
+        // MARK: - Test Support
+
+        .target(
+            name: "Async Test Support",
             dependencies: [
-                "Async Primitives",
-                .product(name: "Test Primitives", package: "swift-test-primitives")
+                "Async",
             ],
-            path: "Tests/Async Primitives Tests"
+            path: "Tests/Support"
+        ),
+
+        // MARK: - Tests
+
+        .testTarget(
+            name: "Async Sequence Tests",
+            dependencies: [
+                "Async Test Support",
+            ]
         ),
         .testTarget(
             name: "Async Stream Tests",
             dependencies: [
-                "Async Stream",
-                .product(name: "Test Primitives", package: "swift-test-primitives")
-            ],
-            path: "Tests/Async Stream Tests"
+                "Async Test Support",
+                .product(name: "Clocks Dependencies", package: "swift-clocks-dependencies"),
+            ]
         )
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
 
-for target in package.targets where ![.system, .binary, .plugin].contains(target.type) {
-    let settings: [SwiftSetting] = [
+for target in package.targets where ![.system, .binary, .plugin, .macro].contains(target.type) {
+    let ecosystem: [SwiftSetting] = [
+        .strictMemorySafety(),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
-        .enableUpcomingFeature("MemberImportVisibility")
+        .enableUpcomingFeature("MemberImportVisibility"),
+        .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+        .enableExperimentalFeature("LifetimeDependence"),
+        .enableExperimentalFeature("Lifetimes"),
+        .enableExperimentalFeature("SuppressedAssociatedTypes"),
+        .enableUpcomingFeature("InferIsolatedConformances"),
+        .enableUpcomingFeature("LifetimeDependence"),
     ]
-    target.swiftSettings = (target.swiftSettings ?? []) + settings
+
+    let package: [SwiftSetting] = []
+
+    target.swiftSettings = (target.swiftSettings ?? []) + ecosystem + package
 }

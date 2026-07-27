@@ -10,6 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Async_Primitives
+public import Ownership_Primitives
+internal import Standard_Library_Extensions
 
 extension Async.Stream.Sample {
     /// Internal state for sample.
@@ -46,16 +48,24 @@ extension Async.Stream.Sample.State {
     func startSourceTask() {
         guard !started else { return }
         started = true
-        sourceTask = Task {
-            for await element in source {
-                await self.updateLatest(element)
+        // Hoist the member into a local: an implicit-self reference
+        // (`source` = self.source) inside the `run` closure captures the
+        // actor alongside the explicit `isolated Self` parameter, and
+        // SILGen traps on asserts toolchains ("building SIL function
+        // type with multiple isolated parameters", ASTContext.cpp:5421).
+        let source = self.source
+        sourceTask = Task { [self] in
+            await self.run { state in
+                for await element in source {
+                    await state.updateLatest(element)
+                }
+                await state.markSourceDone()
             }
-            await self.markSourceDone()
         }
     }
 
     @usableFromInline
-    func updateLatest(_ element: Element) async {
+    func updateLatest(_ element: sending Element) async {
         latest = element
     }
 

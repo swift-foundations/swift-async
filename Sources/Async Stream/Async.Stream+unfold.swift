@@ -1,0 +1,78 @@
+// ===----------------------------------------------------------------------===//
+//
+// This source file is part of the swift-async open source project
+//
+// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE for license information
+//
+// ===----------------------------------------------------------------------===//
+
+public import Async_Primitives
+
+// MARK: - Unfold Method
+
+extension Async.Stream {
+    /// Creates a stream by repeatedly applying a function to state.
+    ///
+    /// Similar to `sequence(state:next:)` but async and returns a concrete Stream type.
+    ///
+    /// ## Usage
+    /// ```swift
+    /// // Fibonacci sequence
+    /// let fib = Async.Stream.unfold((0, 1)) { state in
+    ///     let value = state.0
+    ///     return (value, (state.1, state.0 + state.1))
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - initial: The initial state.
+    ///   - next: A function that produces an element and next state, or nil to complete.
+    /// - Returns: A stream of unfolded elements.
+    public static func unfold<State: Sendable>(
+        _ initial: sending State,
+        _ next: @escaping @Sendable (State) async -> (Element, State)?
+    ) -> Self {
+        let captured = initial
+        return Self {
+            let state = Async.Stream<Element>.Unfold.State(initial: captured, next: next)
+            return Iterator {
+                await state.next()
+            }
+        }
+    }
+}
+
+// MARK: - Generate Method
+
+extension Async.Stream {
+    /// Creates a stream from a generator function.
+    ///
+    /// The generator is called repeatedly to produce elements.
+    /// Return `nil` to complete the stream.
+    ///
+    /// ## Usage
+    /// ```swift
+    /// var count = 0
+    /// let stream = Async.Stream.generate {
+    ///     count += 1
+    ///     return count <= 5 ? count : nil
+    /// }
+    /// // Emits: 1, 2, 3, 4, 5
+    /// ```
+    ///
+    /// - Parameter generator: A function that produces elements.
+    /// - Returns: A stream that emits generated elements.
+    public static func generate(
+        _ generator: @escaping @Sendable () async -> Element?
+    ) -> Self {
+        Self {
+            Iterator {
+                if Task.isCancelled { return nil }
+                return await generator()
+            }
+        }
+    }
+}

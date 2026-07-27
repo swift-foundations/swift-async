@@ -1,0 +1,9 @@
+# .github/metadata.yaml
+# Triaged by AI-assisted bulk pass (2026-04-29).
+description: "A concrete, non-erased AsyncSequence type with reactive combinators — merge, zip, debounce, throttle, multicast — for Swift."
+topics:
+  - foundations
+  - async
+homepage: "https://swift-institute.org"
+readme:
+  family: E
