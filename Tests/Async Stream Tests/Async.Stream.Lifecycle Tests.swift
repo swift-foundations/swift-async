@@ -320,8 +320,13 @@ extension `Async.Stream Tests`.`Edge Case` {
             let expected = Array(0..<elementCount)
 
             if let results {
-                let firstBad = zip(results, expected).enumerated().first { _, pair in pair.0 != pair.1 }?.offset
-                let detail = firstBad.map { " (first divergence @\($0): \(results[$0]) != \(expected[$0]))" }
+                let firstBad = (0..<Swift.min(results.count, expected.count)).first {
+                    results[$0] != expected[$0]
+                }
+                let detail =
+                    firstBad.map {
+                        " (first divergence @\($0): \(results[$0]) != \(expected[$0]))"
+                    }
                     ?? " (length mismatch)"
                 let message = "trial \(trial): got \(results.count)/\(expected.count) elements" + detail
                 #expect(results == expected, Comment(rawValue: message))

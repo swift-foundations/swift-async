@@ -9,7 +9,7 @@ let package = Package(
         .iOS(.v26),
         .tvOS(.v26),
         .watchOS(.v26),
-        .visionOS(.v26)
+        .visionOS(.v26),
     ],
     products: [
         .library(
@@ -47,7 +47,7 @@ let package = Package(
         .target(
             name: "Async Sequence",
             dependencies: [
-                .product(name: "Async Primitives", package: "swift-async-primitives"),
+                .product(name: "Async Primitives", package: "swift-async-primitives")
             ]
         ),
 
@@ -93,7 +93,7 @@ let package = Package(
         .target(
             name: "Async Test Support",
             dependencies: [
-                "Async",
+                "Async"
             ],
             path: "Tests/Support"
         ),
@@ -103,7 +103,7 @@ let package = Package(
         .testTarget(
             name: "Async Sequence Tests",
             dependencies: [
-                "Async Test Support",
+                "Async Test Support"
             ]
         ),
         .testTarget(
@@ -112,7 +112,7 @@ let package = Package(
                 "Async Test Support",
                 .product(name: "Clocks Dependencies", package: "swift-clocks-dependencies"),
             ]
-        )
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
