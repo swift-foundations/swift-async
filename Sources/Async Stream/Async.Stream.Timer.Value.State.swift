@@ -40,10 +40,7 @@ extension Async.Stream.Timer.Value.State {
         if fired { return nil }
         if Task.isCancelled { return nil }
 
-        // swift-linter:disable:next try optional
-        // REASON: `Clock.Any.sleep` witnesses stdlib `Swift.Clock.sleep`, declared
-        // untyped `async throws` — there is no `E` for `do throws(E)` to name
-        // (rule-exemptions untyped-callee carve-out, feedback_prefer_typed_throws_over_try_optional).
+        // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
         try? await clock.sleep(for: delay)
         if Task.isCancelled { return nil }
 
