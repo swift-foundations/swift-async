@@ -52,7 +52,7 @@ extension Async.Stream.Latest.State {
         // type with multiple isolated parameters", ASTContext.cpp:5421).
         let other = self.other
         otherTask = Task { [self] in
-            await self.run { state in
+            await run { state in
                 for await element in other {
                     await state.updateLatestOther(element)
                 }

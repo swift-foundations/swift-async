@@ -55,7 +55,7 @@ extension Async.Stream.Sample.State {
         // type with multiple isolated parameters", ASTContext.cpp:5421).
         let source = self.source
         sourceTask = Task { [self] in
-            await self.run { state in
+            await run { state in
                 for await element in source {
                     await state.updateLatest(element)
                 }

@@ -28,7 +28,7 @@ extension Async.Stream {
     /// - Returns: A stream with delayed elements.
     public func delay(_ duration: Duration) -> Self {
         Self { [self] in
-            let box = Async.Stream<Element>.Iterator.Box(self.makeAsyncIterator())
+            let box = Async.Stream<Element>.Iterator.Box(makeAsyncIterator())
             return Iterator {
                 @Dependency(\.clock) var clock
                 guard let element = await box.next() else { return nil }

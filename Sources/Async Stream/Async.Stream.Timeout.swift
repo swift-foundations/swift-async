@@ -30,7 +30,7 @@ extension Async.Stream {
     /// - Returns: A stream that completes on timeout.
     public func timeout(_ duration: Duration) -> Self {
         Self { [self] in
-            let box = Async.Stream<Element>.Iterator.Box(self.makeAsyncIterator())
+            let box = Async.Stream<Element>.Iterator.Box(makeAsyncIterator())
 
             return Iterator {
                 @Dependency(\.clock) var clock

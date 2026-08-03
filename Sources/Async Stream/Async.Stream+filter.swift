@@ -26,7 +26,7 @@ extension Async.Stream {
         _ predicate: @escaping @Sendable (Element) -> Bool
     ) -> Self {
         Self { [self] in
-            let box = Async.Stream<Element>.Iterator.Box(self.makeAsyncIterator())
+            let box = Async.Stream<Element>.Iterator.Box(makeAsyncIterator())
             return Iterator {
                 while true {
                     guard let element = await box.next() else { return nil }
@@ -46,7 +46,7 @@ extension Async.Stream {
         _ predicate: @escaping @Sendable (Element) async -> Bool
     ) -> Self {
         Self { [self] in
-            let box = Async.Stream<Element>.Iterator.Box(self.makeAsyncIterator())
+            let box = Async.Stream<Element>.Iterator.Box(makeAsyncIterator())
             return Iterator {
                 while true {
                     guard let element = await box.next() else { return nil }
