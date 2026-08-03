@@ -58,7 +58,12 @@ extension Async.Stream.Share.Cursor {
         // only ever runs one call at a time per the AsyncIteratorProtocol
         // single-consumer contract already documented on `Iterator.Box`.
         var localIterator = iterator
-        let result = try? await localIterator.next()
+        let result: Element?
+        do throws(Async.Broadcast<Element>.Error) {
+            result = try await localIterator.next()
+        } catch {
+            result = nil
+        }
         iterator = localIterator
         return result
     }

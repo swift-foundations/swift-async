@@ -63,19 +63,35 @@ extension Async {
             }
 
             @inlinable
+            // swiftlint:disable:next no_any_protocol_existential
+            // REASON: exact `AsyncIteratorProtocol.next(isolation:)` requirement
+            // signature (stdlib; rule-exemptions protocol-requirement shape) — the
+            // isolation parameter type is fixed by the protocol, not a local choice.
             public mutating func next(
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Segment.Element? {
                 while true {
                     if var inner = currentIterator {
-                        if let element = try? await inner.next(isolation: actor) {
+                        let element: Segment.Element?
+                        do throws(Segment.Failure) {
+                            element = try await inner.next(isolation: actor)
+                        } catch {
+                            element = nil
+                        }
+                        if let element {
                             currentIterator = inner
                             return element
                         }
                         currentIterator = nil
                     }
 
-                    guard let base = try? await baseIterator.next(isolation: actor) else {
+                    let base: Base.Element?
+                    do throws(Base.Failure) {
+                        base = try await baseIterator.next(isolation: actor)
+                    } catch {
+                        return nil
+                    }
+                    guard let base else {
                         return nil
                     }
 

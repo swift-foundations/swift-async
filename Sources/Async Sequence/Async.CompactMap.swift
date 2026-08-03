@@ -58,10 +58,21 @@ extension Async {
             }
 
             @inlinable
+            // swiftlint:disable:next no_any_protocol_existential
+            // REASON: exact `AsyncIteratorProtocol.next(isolation:)` requirement
+            // signature (stdlib; rule-exemptions protocol-requirement shape) — the
+            // isolation parameter type is fixed by the protocol, not a local choice.
             public mutating func next(
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Output? {
-                while let element = try? await baseIterator.next(isolation: actor) {
+                while true {
+                    let element: Base.Element?
+                    do throws(Base.Failure) {
+                        element = try await baseIterator.next(isolation: actor)
+                    } catch {
+                        return nil
+                    }
+                    guard let element else { return nil }
                     let result: Output?
                     switch transform {
                     case .sync(let f): result = f(element)
@@ -71,7 +82,6 @@ extension Async {
                         return output
                     }
                 }
-                return nil
             }
         }
 

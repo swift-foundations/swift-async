@@ -80,6 +80,10 @@ extension Async.Stream.Buffer.Time.State {
                 }
 
                 group.addTask {
+                    // swift-linter:disable:next try optional
+                    // REASON: `Clock.Any.sleep` witnesses stdlib `Swift.Clock.sleep`, declared
+                    // untyped `async throws` — there is no `E` for `do throws(E)` to name
+                    // (rule-exemptions untyped-callee carve-out, feedback_prefer_typed_throws_over_try_optional).
                     try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: remaining))
                     return .timerExpired
                 }
