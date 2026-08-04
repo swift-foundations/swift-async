@@ -35,6 +35,7 @@ extension Ownership.Mutable.Unchecked where Value: AsyncIteratorProtocol {
     /// }
     /// ```
     public func next() async -> Value.Element? {
+        // swiftlint:disable:next no_try_optional - AsyncIteratorProtocol.next() (no isolation param) is the original stdlib requirement, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
         try? await mutable.value.next()
     }
 }

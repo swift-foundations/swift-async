@@ -109,6 +109,7 @@ extension Async.Stream.Buffer.Window.State {
                 }
 
                 group.addTask {
+                    // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
                     try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: remaining))
                     return .timerExpired
                 }

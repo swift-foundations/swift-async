@@ -126,6 +126,7 @@ extension Async.Stream {
     public static var never: Self {
         Self {
             Iterator {
+                // swiftlint:disable:next no_try_optional - Swift.Task.sleep is a stdlib API declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
                 try? await Task.sleep(for: .seconds(Int64.max))
                 return nil
             }

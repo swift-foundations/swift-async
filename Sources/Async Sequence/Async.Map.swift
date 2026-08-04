@@ -56,9 +56,16 @@ extension Async {
 
             @inlinable
             public mutating func next(
+                // swiftlint:disable:next no_any_protocol_existential - exact AsyncIteratorProtocol.next(isolation:) requirement signature (stdlib; rule-exemptions protocol-requirement shape)
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Output? {
-                guard let element = try? await baseIterator.next(isolation: actor) else {
+                let element: Base.Element?
+                do throws(Base.Failure) {
+                    element = try await baseIterator.next(isolation: actor)
+                } catch {
+                    return nil
+                }
+                guard let element else {
                     return nil
                 }
                 switch transform {

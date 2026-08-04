@@ -28,10 +28,11 @@ extension Async.Stream {
     /// - Returns: A stream with delayed elements.
     public func delay(_ duration: Duration) -> Self {
         Self { [self] in
-            let box = Async.Stream<Element>.Iterator.Box(self.makeAsyncIterator())
+            let box = Async.Stream<Element>.Iterator.Box(makeAsyncIterator())
             return Iterator {
                 @Dependency(\.clock) var clock
                 guard let element = await box.next() else { return nil }
+                // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
                 try? await clock.sleep(for: duration)
                 if Task.isCancelled { return nil }
                 return element

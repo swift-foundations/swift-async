@@ -36,6 +36,7 @@ extension Async.Stream.Timer.State where Element == Void {
         if fired { return nil }
         if Task.isCancelled { return nil }
 
+        // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
         try? await clock.sleep(for: delay)
         if Task.isCancelled { return nil }
 

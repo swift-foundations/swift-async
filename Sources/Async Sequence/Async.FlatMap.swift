@@ -10,9 +10,12 @@
 // ===----------------------------------------------------------------------===//
 
 extension Async {
-    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
-    // nesting `Flat` inside produces unusable type paths.
+    // WORKAROUND: [API-NAME-001] Compound name `FlatMap`.
+    // WHY: `Async.Map` is generic over `Base` and `Output`; Swift cannot re-bind
+    // outer generic parameters in a nested type, so `Async.Map.Flat` would
+    // produce unusable type paths. The compound name is the only expressible shape.
     // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
+    // TRACKING: https://github.com/swift-foundations/swift-async/issues/5
     /// An asynchronous sequence that concatenates inner sequences produced by a transform.
     ///
     /// `FlatMap` preserves caller isolation — the transform runs on the actor
@@ -64,18 +67,31 @@ extension Async {
 
             @inlinable
             public mutating func next(
+                // swiftlint:disable:next no_any_protocol_existential - exact AsyncIteratorProtocol.next(isolation:) requirement signature (stdlib; rule-exemptions protocol-requirement shape)
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Segment.Element? {
                 while true {
                     if var inner = currentIterator {
-                        if let element = try? await inner.next(isolation: actor) {
+                        let element: Segment.Element?
+                        do throws(Segment.Failure) {
+                            element = try await inner.next(isolation: actor)
+                        } catch {
+                            element = nil
+                        }
+                        if let element {
                             currentIterator = inner
                             return element
                         }
                         currentIterator = nil
                     }
 
-                    guard let base = try? await baseIterator.next(isolation: actor) else {
+                    let base: Base.Element?
+                    do throws(Base.Failure) {
+                        base = try await baseIterator.next(isolation: actor)
+                    } catch {
+                        return nil
+                    }
+                    guard let base else {
                         return nil
                     }
 

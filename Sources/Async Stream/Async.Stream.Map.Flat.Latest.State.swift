@@ -96,7 +96,7 @@ extension Async.Stream.Map.Flat.Latest.State {
                 case .async(let f): innerStream = await f(outerElement)
                 }
                 innerTask = Task { [self] in
-                    await self.run { state in
+                    await run { state in
                         for await innerElement in innerStream {
                             await state.receiveInner(innerElement)
                         }
