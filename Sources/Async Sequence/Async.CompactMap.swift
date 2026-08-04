@@ -10,9 +10,12 @@
 // ===----------------------------------------------------------------------===//
 
 extension Async {
-    // WORKAROUND: [API-NAME-001] Compound name — `Async.Map` is generic,
-    // nesting `Compact` inside produces unusable type paths.
+    // WORKAROUND: [API-NAME-001] Compound name `CompactMap`.
+    // WHY: `Async.Map` is generic over `Base` and `Output`; Swift cannot re-bind
+    // outer generic parameters in a nested type, so `Async.Map.Compact` would
+    // produce unusable type paths. The compound name is the only expressible shape.
     // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
+    // TRACKING: https://github.com/swift-foundations/swift-async/issues/5
     /// An asynchronous sequence that transforms elements and discards `nil` results.
     ///
     /// `CompactMap` preserves caller isolation — the transform runs on the actor
