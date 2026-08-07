@@ -25,6 +25,10 @@ let package = Package(
             targets: ["Async Stream"]
         ),
         .library(
+            name: "Async Fanout",
+            targets: ["Async Fanout"]
+        ),
+        .library(
             name: "Async Test Support",
             targets: ["Async Test Support"]
         ),
@@ -81,11 +85,21 @@ let package = Package(
             ]
         ),
 
+        // MARK: - Async Fanout
+
+        .target(
+            name: "Async Fanout",
+            dependencies: [
+                .product(name: "Async Primitives", package: "swift-async-primitives")
+            ]
+        ),
+
         .target(
             name: "Async",
             dependencies: [
                 "Async Sequence",
                 "Async Stream",
+                "Async Fanout",
             ]
         ),
         // MARK: - Test Support
@@ -100,6 +114,12 @@ let package = Package(
 
         // MARK: - Tests
 
+        .testTarget(
+            name: "Async Fanout Tests",
+            dependencies: [
+                "Async Test Support"
+            ]
+        ),
         .testTarget(
             name: "Async Sequence Tests",
             dependencies: [
