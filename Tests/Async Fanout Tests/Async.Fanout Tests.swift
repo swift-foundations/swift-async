@@ -52,8 +52,9 @@ extension `Async.Fanout Tests`.Unit {
 
         _ = await Async.Fanout(jobs: 6).map(
             Array(0..<50),
-            completed: { counts.record($0) }
-        ) { $0 }
+            completed: { counts.record($0) },
+            { $0 }
+        )
 
         #expect(counts.observed == Array(1...50))
     }
@@ -67,8 +68,9 @@ extension `Async.Fanout Tests`.`Edge Case` {
 
         let results = await Async.Fanout(jobs: 4).map(
             [Swift.Int](),
-            completed: { counts.record($0) }
-        ) { $0 }
+            completed: { counts.record($0) },
+            { $0 }
+        )
 
         #expect(results.isEmpty)
         #expect(counts.observed.isEmpty)
