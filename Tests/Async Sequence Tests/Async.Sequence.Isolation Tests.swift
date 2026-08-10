@@ -74,7 +74,10 @@ struct Test {
     func `map with async closure`() async {
         let source = Produce([1, 2, 3])
 
-        let mapped = source.map { value -> String in
+        // Explicit result type: on release Swift 6.4 the async-closure call is
+        // otherwise ambiguous between this package's isolation-preserving
+        // overload and the stdlib's AsyncSequence.map.
+        let mapped: Async.Map<Produce<Int>, String> = source.map { value -> String in
             try? await Task.sleep(for: .microseconds(1))
             return "\(value)"
         }
@@ -91,7 +94,10 @@ struct Test {
     func `filter with async closure`() async {
         let source = Produce([1, 2, 3, 4, 5])
 
-        let filtered = source.filter { value -> Bool in
+        // Explicit result type: on release Swift 6.4 the async-closure call is
+        // otherwise ambiguous between this package's isolation-preserving
+        // overload and the stdlib's AsyncSequence.filter.
+        let filtered: Async.Filter<Produce<Int>> = source.filter { value -> Bool in
             try? await Task.sleep(for: .microseconds(1))
             return value > 3
         }
