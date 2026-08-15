@@ -35,7 +35,11 @@ extension Async.Stream.Merge {
         let task2: Task<Void, Never>
 
         @usableFromInline
-        init(state: Async.Stream<Element>.Merge.State, task1: Task<Void, Never>, task2: Task<Void, Never>) {
+        init(
+            state: Async.Stream<Element>.Merge.State,
+            task1: Task<Void, Never>,
+            task2: Task<Void, Never>
+        ) {
             self.state = state
             self.task1 = task1
             self.task2 = task2

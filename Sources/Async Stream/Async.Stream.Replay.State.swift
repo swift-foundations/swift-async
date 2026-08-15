@@ -82,7 +82,10 @@ extension Async.Stream.Replay.State {
     func subscribe() -> Async.Stream<Element>.Replay.Subscription {
         var replay: [Element] = []
         ring.forEach { replay.append($0) }
-        let subscription = Async.Stream<Element>.Replay.Subscription(replay: replay, finished: finished)
+        let subscription = Async.Stream<Element>.Replay.Subscription(
+            replay: replay,
+            finished: finished
+        )
         if !finished {
             subscriptions.append(subscription)
         }

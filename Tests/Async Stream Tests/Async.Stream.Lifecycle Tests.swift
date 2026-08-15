@@ -74,7 +74,9 @@ extension `Async.Stream Tests`.`Edge Case` {
     // MARK: F-001 — continuation-cancellation hangs (blocker)
 
     @Test(.timeLimit(.minutes(2)))
-    func `merge resumes a suspended consumer instead of hanging when its task is cancelled`() async throws {
+    func `merge resumes a suspended consumer instead of hanging when its task is cancelled`()
+        async throws
+    {
         // Two `AsyncStream`s whose continuations are never used: they never
         // yield and never finish, so `merge`'s only path to completion is
         // consumer-task cancellation — exactly what this test exercises.
@@ -107,7 +109,9 @@ extension `Async.Stream Tests`.`Edge Case` {
     }
 
     @Test(.timeLimit(.minutes(2)))
-    func `replay resumes a suspended consumer instead of hanging when its task is cancelled`() async throws {
+    func `replay resumes a suspended consumer instead of hanging when its task is cancelled`()
+        async throws
+    {
         // See the merge test above for why this uses a never-yielding
         // `AsyncStream` instead of `Async.Stream<Int>.never`.
         let (raw, _) = AsyncStream<Int>.makeStream()
@@ -132,7 +136,9 @@ extension `Async.Stream Tests`.`Edge Case` {
     // MARK: F-002 — eager, never-cancelled forwarding / producer tasks
 
     @Test(.timeLimit(.minutes(2)))
-    func `merge cancels both producer tasks when its iterator is dropped without exhausting`() async throws {
+    func `merge cancels both producer tasks when its iterator is dropped without exhausting`()
+        async throws
+    {
         let flagA = `Lifecycle Flag`()
         let flagB = `Lifecycle Flag`()
 
@@ -161,7 +167,9 @@ extension `Async.Stream Tests`.`Edge Case` {
     }
 
     @Test(.timeLimit(.minutes(2)))
-    func `share cancels upstream forwarding once the shared stream is totally abandoned`() async throws {
+    func `share cancels upstream forwarding once the shared stream is totally abandoned`()
+        async throws
+    {
         let flag = `Lifecycle Flag`()
         let (raw, continuation) = AsyncStream<Int>.makeStream()
         continuation.onTermination = { _ in Task { await flag.set() } }
@@ -181,7 +189,9 @@ extension `Async.Stream Tests`.`Edge Case` {
     }
 
     @Test(.timeLimit(.minutes(2)))
-    func `replay cancels upstream forwarding once the replay stream is totally abandoned`() async throws {
+    func `replay cancels upstream forwarding once the replay stream is totally abandoned`()
+        async throws
+    {
         let flag = `Lifecycle Flag`()
         let (raw, continuation) = AsyncStream<Int>.makeStream()
         continuation.onTermination = { _ in Task { await flag.set() } }
@@ -203,8 +213,11 @@ extension `Async.Stream Tests`.`Edge Case` {
     // MARK: F-003 — dead unsubscribe / unbounded subscription accumulation
 
     @Test(.timeLimit(.minutes(2)))
-    func `replay subscription count returns to zero after N consumers churn through`() async throws {
-        let (replayed, subscriptionCount) = Async.Stream.from([1, 2, 3, 4, 5]).replayForTesting(bufferSize: 4)
+    func `replay subscription count returns to zero after N consumers churn through`() async throws
+    {
+        let (replayed, subscriptionCount) = Async.Stream.from([1, 2, 3, 4, 5]).replayForTesting(
+            bufferSize: 4
+        )
 
         for _ in 0..<10 {
             let iterator = replayed.makeAsyncIterator()
@@ -276,7 +289,9 @@ extension `Async.Stream Tests`.`Edge Case` {
     /// evidence is the code-level soundness of the synchronous ordered-delivery
     /// fix plus the deterministic F-001/F-002/F-003 regressions.
     @Test(.timeLimit(.minutes(2)))
-    func `replay delivers a fast pre-subscribed burst in strict send order with no drops`() async throws {
+    func `replay delivers a fast pre-subscribed burst in strict send order with no drops`()
+        async throws
+    {
         let elementCount = 2_000
         let trialCount = 5
 
@@ -288,7 +303,9 @@ extension `Async.Stream Tests`.`Edge Case` {
             // backfill, so the test cannot flake green->red under load), while
             // the pre-subscribe poll below still tries to hit the live
             // `send`->`receive` path that is F-004's actual mechanism.
-            let (replayed, subscriptionCount) = Async.Stream(raw).replayForTesting(bufferSize: elementCount)
+            let (replayed, subscriptionCount) = Async.Stream(raw).replayForTesting(
+                bufferSize: elementCount
+            )
 
             let consumer = Task<[Int], Never> {
                 var results: [Int] = []
@@ -328,10 +345,14 @@ extension `Async.Stream Tests`.`Edge Case` {
                         " (first divergence @\($0): \(results[$0]) != \(expected[$0]))"
                     }
                     ?? " (length mismatch)"
-                let message = "trial \(trial): got \(results.count)/\(expected.count) elements" + detail
+                let message =
+                    "trial \(trial): got \(results.count)/\(expected.count) elements" + detail
                 #expect(results == expected, Comment(rawValue: message))
             } else {
-                #expect(Bool(false), Comment(rawValue: "trial \(trial): consumer did not finish within the deadline"))
+                #expect(
+                    Bool(false),
+                    Comment(rawValue: "trial \(trial): consumer did not finish within the deadline")
+                )
             }
         }
     }

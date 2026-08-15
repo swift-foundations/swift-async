@@ -99,7 +99,8 @@ extension Async.Stream.Buffer.Window.State {
             }
 
             // Race: get next element vs timer
-            let result = await withTaskGroup(of: Async.Stream<Element>.Buffer.Time.Event.self) { group in
+            let result = await withTaskGroup(of: Async.Stream<Element>.Buffer.Time.Event.self) {
+                group in
                 group.addTask {
                     if let element = await self.box.next() {
                         return .element(element)

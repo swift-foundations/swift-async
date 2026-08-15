@@ -305,7 +305,10 @@ struct Test {
         }
 
         #expect(results == [2, 4, 6])
-        #expect(!allOnMain, "stdlib map closure should NOT run on MainActor — this is the bug we fix")
+        #expect(
+            !allOnMain,
+            "stdlib map closure should NOT run on MainActor — this is the bug we fix"
+        )
     }
 }
 

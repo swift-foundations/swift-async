@@ -163,7 +163,8 @@ extension Async.Stream {
     ///
     /// - Parameter sequence: The sequence to emit.
     /// - Returns: A stream that emits each element.
-    public static func from<S: Swift.Sequence & Sendable>(_ sequence: S) -> Self where S.Element == Element {
+    public static func from<S: Swift.Sequence & Sendable>(_ sequence: S) -> Self
+    where S.Element == Element {
         Self {
             let state = State(Array(sequence))
             return Iterator {

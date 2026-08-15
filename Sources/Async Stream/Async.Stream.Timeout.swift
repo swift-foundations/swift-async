@@ -41,7 +41,9 @@ extension Async.Stream {
                             await box.next()
                         }
                         group.addTask {
-                            try await resolvedClock.sleep(until: resolvedClock.now.advanced(by: duration))
+                            try await resolvedClock.sleep(
+                                until: resolvedClock.now.advanced(by: duration)
+                            )
                             throw CancellationError()
                         }
 

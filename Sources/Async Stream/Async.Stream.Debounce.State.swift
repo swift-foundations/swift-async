@@ -53,7 +53,8 @@ extension Async.Stream.Debounce.State {
 
         while true {
             // Race: get next element vs timer expiry
-            let result = await withTaskGroup(of: Async.Stream<Element>.Debounce.Event.self) { group in
+            let result = await withTaskGroup(of: Async.Stream<Element>.Debounce.Event.self) {
+                group in
                 group.addTask {
                     if let element = await self.box.next() {
                         return .element(element)
@@ -65,7 +66,9 @@ extension Async.Stream.Debounce.State {
                 if self.pending != nil {
                     group.addTask {
                         // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
-                        try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: self.duration))
+                        try? await resolvedClock.sleep(
+                            until: resolvedClock.now.advanced(by: self.duration)
+                        )
                         return .timerExpired
                     }
                 }

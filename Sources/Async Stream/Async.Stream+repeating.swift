@@ -53,9 +53,17 @@ extension Async.Stream {
     ///   - interval: The delay between emissions.
     ///   - count: Number of times to emit (nil for infinite).
     /// - Returns: A stream that emits the value at intervals.
-    public static func repeating(_ value: Element, every interval: Duration, count: Int? = nil) -> Self {
+    public static func repeating(
+        _ value: Element,
+        every interval: Duration,
+        count: Int? = nil
+    ) -> Self {
         Self {
-            let state = Async.Stream<Element>.Repeat.Interval.State(value: value, interval: interval, count: count)
+            let state = Async.Stream<Element>.Repeat.Interval.State(
+                value: value,
+                interval: interval,
+                count: count
+            )
             return Iterator {
                 await state.next()
             }

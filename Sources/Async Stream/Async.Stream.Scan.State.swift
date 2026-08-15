@@ -26,7 +26,11 @@ extension Async.Stream.Scan {
         var state: Result
 
         @usableFromInline
-        init(stream: Async.Stream<Element>, initial: sending Result, accumulator: @escaping @Sendable (Result, Element) -> Result) {
+        init(
+            stream: Async.Stream<Element>,
+            initial: sending Result,
+            accumulator: @escaping @Sendable (Result, Element) -> Result
+        ) {
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.state = initial
             self.accumulator = accumulator
