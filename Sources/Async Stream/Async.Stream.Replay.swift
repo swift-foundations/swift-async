@@ -44,7 +44,9 @@ extension Async.Stream {
     /// current subscription count, so tests can assert on subscription-list
     /// cleanup without the internal `State` type itself appearing in a
     /// `package`-level signature. Not part of the public API.
-    package func replayForTesting(bufferSize: Int) -> (stream: Self, subscriptionCount: @Sendable () async -> Int) {
+    package func replayForTesting(
+        bufferSize: Int
+    ) -> (stream: Self, subscriptionCount: @Sendable () async -> Int) {
         let state = Async.Stream<Element>.Replay.State(bufferSize: bufferSize)
 
         // Start forwarding upstream. F-002: the task handle is retained via

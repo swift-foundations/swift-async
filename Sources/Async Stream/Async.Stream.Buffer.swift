@@ -94,7 +94,11 @@ extension Async.Stream.Buffer {
     /// - Returns: A stream of element arrays.
     public func window(count: Int, time duration: Duration) -> Async.Stream<[Element]> {
         Async.Stream<[Element]> { [base] in
-            let state = Async.Stream<Element>.Buffer.Window.State(stream: base, count: count, duration: duration)
+            let state = Async.Stream<Element>.Buffer.Window.State(
+                stream: base,
+                count: count,
+                duration: duration
+            )
             return Async.Stream<[Element]>.Iterator {
                 await state.next()
             }

@@ -30,7 +30,11 @@ extension Async.Stream {
     ) -> Async.Stream<Result> {
         let captured = initial
         return Async.Stream<Result> { [self] in
-            let state = Async.Stream<Element>.Scan.State(stream: self, initial: captured, accumulator: accumulator)
+            let state = Async.Stream<Element>.Scan.State(
+                stream: self,
+                initial: captured,
+                accumulator: accumulator
+            )
             return Async.Stream<Result>.Iterator {
                 await state.next()
             }

@@ -27,7 +27,10 @@ extension Async.Stream.Replay {
         var subscription: Async.Stream<Element>.Replay.Subscription?
 
         @usableFromInline
-        init(state: Async.Stream<Element>.Replay.State, connection: Async.Stream<Element>.Replay.Connection) {
+        init(
+            state: Async.Stream<Element>.Replay.State,
+            connection: Async.Stream<Element>.Replay.Connection
+        ) {
             self.state = state
             self.connection = connection
         }

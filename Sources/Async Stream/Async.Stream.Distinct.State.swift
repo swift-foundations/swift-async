@@ -44,7 +44,10 @@ extension Async.Stream.Distinct {
         var previous: Element?
 
         @usableFromInline
-        init(stream: Async.Stream<Element>, areEqual: @escaping @Sendable (Element, Element) -> Bool) {
+        init(
+            stream: Async.Stream<Element>,
+            areEqual: @escaping @Sendable (Element, Element) -> Bool
+        ) {
             self.box = Async.Stream<Element>.Iterator.Box(stream.makeAsyncIterator())
             self.areEqual = areEqual
         }
