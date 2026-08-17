@@ -16,6 +16,8 @@ import Testing
     import Darwin
 #elseif canImport(Glibc)
     import Glibc
+#elseif canImport(WinSDK)
+    import WinSDK
 #endif
 
 @Suite
@@ -327,6 +329,11 @@ struct Test {
 private func currentThreadID() -> UInt {
     #if canImport(Darwin)
         UInt(pthread_mach_thread_np(pthread_self()))
+    #elseif os(Windows)
+        // Windows threads are not pthreads; the OS thread identity is the
+        // one the Win32 scheduler assigns, and it is what the probe above
+        // needs — a stable per-thread value, not a pthread handle.
+        UInt(GetCurrentThreadId())
     #else
         UInt(pthread_self())
     #endif
