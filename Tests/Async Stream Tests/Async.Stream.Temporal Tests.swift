@@ -1,23 +1,8 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Clocks_Dependencies
 import Testing
 
-// MARK: - Temporal Operator Unit Tests
-
 extension `Async.Stream Tests`.Unit {
-
-    // MARK: Delay
 
     @Test
     func `delay preserves all elements`() async {
@@ -61,8 +46,6 @@ extension `Async.Stream Tests`.Unit {
         }
     }
 
-    // MARK: Interval
-
     @Test
     func `interval emits sequential integers`() async {
         await withDependencies {
@@ -91,8 +74,6 @@ extension `Async.Stream Tests`.Unit {
         }
     }
 
-    // MARK: Timer (Void)
-
     @Test
     func `timer emits once then completes`() async {
         await withDependencies {
@@ -106,8 +87,6 @@ extension `Async.Stream Tests`.Unit {
             #expect(count == 1)
         }
     }
-
-    // MARK: Timer (Value)
 
     @Test
     func `timer with value emits value once`() async {
@@ -123,15 +102,12 @@ extension `Async.Stream Tests`.Unit {
         }
     }
 
-    // MARK: Throttle
-
     @Test
     func `throttle emits first and suppresses rapid followers`() async {
         await withDependencies {
             $0.clock = Clock.`Any`(Clock.Immediate())
         } operation: {
-            // With Clock.Immediate, no time passes between elements,
-            // so throttle allows only the first element through.
+
             let stream = Async.Stream.from([1, 2, 3, 4, 5]).throttle(.seconds(1))
             var results: [Int] = []
             for await value in stream {
@@ -169,8 +145,6 @@ extension `Async.Stream Tests`.Unit {
         }
     }
 
-    // MARK: Repeating (with interval)
-
     @Test
     func `repeating with interval emits value N times`() async {
         await withDependencies {
@@ -198,8 +172,6 @@ extension `Async.Stream Tests`.Unit {
             #expect(count == 0)
         }
     }
-
-    // MARK: Repeating (no interval)
 
     @Test
     func `repeating emits value N times`() async {

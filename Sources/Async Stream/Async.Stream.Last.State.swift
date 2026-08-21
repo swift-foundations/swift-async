@@ -1,19 +1,8 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 public import Ownership_Primitives
 
 extension Async.Stream.Last {
-    /// Internal state for last.
+
     @usableFromInline
     actor State {
         @usableFromInline
@@ -37,7 +26,6 @@ extension Async.Stream.Last.State {
     func next() async -> Element? {
         if done { return nil }
 
-        // Consume entire stream
         while let element = await box.next() {
             lastElement = element
         }

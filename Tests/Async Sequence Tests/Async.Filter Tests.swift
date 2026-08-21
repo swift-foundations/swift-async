@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Testing
 
@@ -84,8 +73,6 @@ struct `Async.Filter Tests` {
 
         #expect(results == [5, 3, 1])
     }
-
-    // MARK: - Type Identity
 
     @Test
     func `sync closure returns concrete Async.Filter type`() async {

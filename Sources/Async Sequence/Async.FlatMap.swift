@@ -1,29 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 extension Async {
-    // WORKAROUND: [API-NAME-001] Compound name `FlatMap`.
-    // WHY: `Async.Map` is generic over `Base` and `Output`; Swift cannot re-bind
-    // outer generic parameters in a nested type, so `Async.Map.Flat` would
-    // produce unusable type paths. The compound name is the only expressible shape.
-    // WHEN TO REMOVE: When Swift supports re-binding outer generics in nested types.
-    // TRACKING: https://github.com/swift-foundations/swift-async/issues/5
-    /// An asynchronous sequence that concatenates inner sequences produced by a transform.
-    ///
-    /// `FlatMap` preserves caller isolation — the transform runs on the actor
-    /// that created the pipeline, not on the cooperative pool. Inner sequences
-    /// are consumed serially (one at a time, in order).
-    ///
-    /// Created by calling `.flatMap(_:)` on any `AsyncSequence`.
-    ///
+
     public struct FlatMap<Base: AsyncSequence, Segment: AsyncSequence>: AsyncSequence {
         public typealias Element = Segment.Element
 
@@ -67,7 +43,7 @@ extension Async {
 
             @inlinable
             public mutating func next(
-                // swiftlint:disable:next no_any_protocol_existential - exact AsyncIteratorProtocol.next(isolation:) requirement signature (stdlib; rule-exemptions protocol-requirement shape)
+
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Segment.Element? {
                 while true {
@@ -108,19 +84,9 @@ extension Async {
     }
 }
 
-// MARK: - AsyncSequence Conformance
-
 extension Async.FlatMap {
     @inlinable
     public func makeAsyncIterator() -> Iterator {
         Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
     }
 }
-
-// MARK: - Sendable
-
-// Async.FlatMap is intentionally non-Sendable. The transform closures are
-// nonisolated(nonsending) — they inherit the caller's isolation and may
-// capture non-Sendable actor-isolated state. Claiming Sendable would be
-// unsound. For Sendable pipelines, use Async.Stream.map.flat (which
-// requires @Sendable closures).

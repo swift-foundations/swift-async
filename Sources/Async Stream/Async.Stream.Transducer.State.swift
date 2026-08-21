@@ -1,10 +1,3 @@
-//
-//  Async.Stream.Transducer.State.swift
-//  swift-async
-//
-//  Actor managing transducer state for async stream transformation.
-//
-
 public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
@@ -16,7 +9,7 @@ public import Ownership_Primitives
 public import Storage_Contiguous_Primitives
 
 extension Async.Stream.Transducer {
-    /// Actor managing transducer state.
+
     @usableFromInline
     actor Run {
         @usableFromInline
@@ -49,16 +42,15 @@ extension Async.Stream.Transducer {
 extension Async.Stream.Transducer.Run {
     @inlinable
     package func next() async -> Output? {
-        // Return pending outputs first
+
         if !queue.isEmpty {
             return queue.dequeue()!
         }
 
-        // Step more input
         while !upstreamDone {
             guard let element = await box.next() else {
                 upstreamDone = true
-                // Complete - flush remaining
+
                 let finals = transducer.complete(&state)
                 if !finals.isEmpty {
                     for output in finals.dropFirst() { queue.enqueue(output) }
@@ -78,13 +70,8 @@ extension Async.Stream.Transducer.Run {
     }
 }
 
-// MARK: - Async.Stream Extension
-
 extension Async.Stream {
-    /// Transforms stream elements using a transducer.
-    ///
-    /// - Parameter transducer: The transducer to process elements.
-    /// - Returns: Stream of transformed outputs.
+
     public func transduce<Output: Sendable, State: Sendable>(
         with transducer: Transducer<Output, State>
     ) -> Async.Stream<Output> {

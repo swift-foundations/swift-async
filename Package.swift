@@ -84,8 +84,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Async Stream Core (internal-only)
-
         .target(
             name: "Async Stream Core",
             dependencies: [
@@ -96,8 +94,6 @@ let package = Package(
                 .product(name: "Reference Primitives", package: "swift-reference-primitives"),
             ]
         ),
-
-        // MARK: - Async Stream
 
         .target(
             name: "Async Stream",
@@ -123,8 +119,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Async Fanout
-
         .target(
             name: "Async Fanout",
             dependencies: [
@@ -140,7 +134,6 @@ let package = Package(
                 "Async Fanout",
             ]
         ),
-        // MARK: - Test Support
 
         .target(
             name: "Async Test Support",
@@ -149,8 +142,6 @@ let package = Package(
             ],
             path: "Tests/Support"
         ),
-
-        // MARK: - Tests
 
         .testTarget(
             name: "Async Fanout Tests",

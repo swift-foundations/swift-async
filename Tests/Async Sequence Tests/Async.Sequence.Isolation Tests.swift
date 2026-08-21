@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Testing
 
@@ -22,8 +11,6 @@ import Testing
 
 @Suite
 struct Test {
-
-    // MARK: - Type Identity (Chained)
 
     @Test
     func `chained operators return concrete types`() async {
@@ -44,7 +31,6 @@ struct Test {
             results.append(value)
         }
 
-        // Even: 2, 4, 6, 8, 10 → *3: 6, 12, 18, 24, 30 → >10: 12, 18, 24, 30
         #expect(results == [12, 18, 24, 30])
     }
 
@@ -66,19 +52,13 @@ struct Test {
             results.append(value)
         }
 
-        // 1→2, 2→4, 3→6 then flatMap: [2,3], [4,5], [6,7]
         #expect(results == [2, 3, 4, 5, 6, 7])
     }
-
-    // MARK: - Async Closures
 
     @Test
     func `map with async closure`() async {
         let source = Produce([1, 2, 3])
 
-        // Explicit result type: on release Swift 6.4 the async-closure call is
-        // otherwise ambiguous between this package's isolation-preserving
-        // overload and the stdlib's AsyncSequence.map.
         let mapped: Async.Map<Produce<Int>, String> = source.map { value -> String in
             try? await Task.sleep(for: .microseconds(1))
             return "\(value)"
@@ -96,9 +76,6 @@ struct Test {
     func `filter with async closure`() async {
         let source = Produce([1, 2, 3, 4, 5])
 
-        // Explicit result type: on release Swift 6.4 the async-closure call is
-        // otherwise ambiguous between this package's isolation-preserving
-        // overload and the stdlib's AsyncSequence.filter.
         let filtered: Async.Filter<Produce<Int>> = source.filter { value -> Bool in
             try? await Task.sleep(for: .microseconds(1))
             return value > 3
@@ -112,15 +89,9 @@ struct Test {
         #expect(results == [4, 5])
     }
 
-    // MARK: - Erasure to Async.Stream
-
     @Test
     func `sendable source can be erased to Async.Stream and transformed`() async {
-        // Only a Sendable base crosses the Async.Stream erasure boundary:
-        // concrete Async.Filter / Async.Map are intentionally non-Sendable
-        // (they preserve caller isolation and may capture actor-isolated
-        // state). Erase the Sendable source, then compose with the Sendable
-        // Async.Stream operators (which take @Sendable closures).
+
         let source = Produce([1, 2, 3, 4, 5])
 
         let stream =
@@ -135,8 +106,6 @@ struct Test {
 
         #expect(results == [10, 30, 50])
     }
-
-    // MARK: - Isolation Preservation
 
     @Test @MainActor
     func `sync closure in map runs on caller actor`() async {
@@ -279,7 +248,6 @@ struct Test {
             results.append(value)
         }
 
-        // source: 1,2,3,4,5,6 → filter even: 2,4,6 → *10: 20,40,60 → >20: 40,60 → flatMap: [40,41],[60,61]
         #expect(results == [40, 41, 60, 61])
         #expect(filterOnMain, "filter closure should run on MainActor")
         #expect(mapOnMain, "map closure should run on MainActor")
@@ -287,15 +255,12 @@ struct Test {
         #expect(flatMapOnMain, "flatMap closure should run on MainActor")
     }
 
-    // MARK: - Regression: stdlib operators break isolation
-
     @Test @MainActor
     func `stdlib AsyncMapSequence does not preserve caller isolation`() async {
         let mainThreadID = currentThreadID()
         let source = Produce([1, 2, 3])
         nonisolated(unsafe) var allOnMain = true
 
-        // Force stdlib's async map by using an async closure
         let mapped: AsyncMapSequence<Produce<Int>, Int> = source.map { value -> Int in
             if currentThreadID() != mainThreadID { allOnMain = false }
             return value * 2
@@ -314,25 +279,11 @@ struct Test {
     }
 }
 
-// MARK: - Helpers
-
-/// Identity of the current thread, for caller-actor preservation probes.
-///
-/// `Thread.isMainThread` is a valid MainActor proxy only on Darwin: on Linux
-/// the MainActor executor does not run on the thread corelibs-foundation
-/// reports as "main" — a bare `@MainActor` swift-testing body reports
-/// `isMainThread == false` there while `MainActor.preconditionIsolated()`
-/// passes (verified in Docker swift:6.3, 2026-07-11). Probing thread identity
-/// against the MainActor thread captured in the test body is platform-neutral:
-/// the MainActor executor is a single fixed thread on both platforms, so the
-/// captured identity is stable across suspension points.
 private func currentThreadID() -> UInt {
     #if canImport(Darwin)
         UInt(pthread_mach_thread_np(pthread_self()))
     #elseif os(Windows)
-        // Windows threads are not pthreads; the OS thread identity is the
-        // one the Win32 scheduler assigns, and it is what the probe above
-        // needs — a stable per-thread value, not a pthread handle.
+
         UInt(GetCurrentThreadId())
     #else
         UInt(pthread_self())

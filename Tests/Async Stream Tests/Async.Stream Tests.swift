@@ -1,18 +1,6 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Testing
 
-// TEST-004: Async.Stream<Element> is generic — parallel namespace pattern
 @Suite
 struct `Async.Stream Tests` {
     @Suite struct Unit {}
@@ -21,11 +9,7 @@ struct `Async.Stream Tests` {
     @Suite(.serialized) struct Performance {}
 }
 
-// MARK: - Unit Tests
-
 extension `Async.Stream Tests`.Unit {
-
-    // MARK: Construction
 
     @Test
     func `from creates stream from sequence`() async {
@@ -78,8 +62,6 @@ extension `Async.Stream Tests`.Unit {
 
         #expect(results == [0, 1, 1, 2, 3, 5])
     }
-
-    // MARK: Transformation
 
     @Test
     func `map transforms elements`() async {
@@ -135,8 +117,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results == [1, 10, 2, 20, 3, 30])
     }
 
-    // MARK: Accumulation
-
     @Test
     func `scan accumulates values`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5])
@@ -157,8 +137,6 @@ extension `Async.Stream Tests`.Unit {
 
         #expect(sum == 15)
     }
-
-    // MARK: Combination
 
     @Test
     func `concat joins streams`() async {
@@ -191,8 +169,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results[2].0 == 3 && results[2].1 == "c")
     }
 
-    // MARK: Prefix
-
     @Test
     func `prefix takes first N elements`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).prefix(3)
@@ -216,8 +192,6 @@ extension `Async.Stream Tests`.Unit {
 
         #expect(results == [1, 2, 3])
     }
-
-    // MARK: Drop
 
     @Test
     func `drop skips first N elements`() async {
@@ -243,8 +217,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results == [3, 4, 5])
     }
 
-    // MARK: Selection
-
     @Test
     func `first returns only first element`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5]).first()
@@ -268,8 +240,6 @@ extension `Async.Stream Tests`.Unit {
 
         #expect(results == [5])
     }
-
-    // MARK: Deduplication
 
     @Test
     func `distinctUntilChanged removes consecutive duplicates`() async {

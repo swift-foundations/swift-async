@@ -1,22 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 extension Async {
-    /// An asynchronous sequence that transforms elements using a closure.
-    ///
-    /// `Map` preserves caller isolation — closures run on the actor that
-    /// created the pipeline, not on the cooperative pool. This is the
-    /// concrete-type counterpart to `Async.Stream.map`, which type-erases.
-    ///
-    /// Created by calling `.map(_:)` on any `AsyncSequence`.
+
     public struct Map<Base: AsyncSequence, Output>: AsyncSequence {
         public typealias Element = Output
 
@@ -56,7 +39,7 @@ extension Async {
 
             @inlinable
             public mutating func next(
-                // swiftlint:disable:next no_any_protocol_existential - exact AsyncIteratorProtocol.next(isolation:) requirement signature (stdlib; rule-exemptions protocol-requirement shape)
+
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Output? {
                 let element: Base.Element?
@@ -78,19 +61,9 @@ extension Async {
     }
 }
 
-// MARK: - AsyncSequence Conformance
-
 extension Async.Map {
     @inlinable
     public func makeAsyncIterator() -> Iterator {
         Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
     }
 }
-
-// MARK: - Sendable
-
-// Async.Map is intentionally non-Sendable. The transform closures are
-// nonisolated(nonsending) — they inherit the caller's isolation and may
-// capture non-Sendable actor-isolated state. Claiming Sendable would be
-// unsound. For Sendable pipelines, use Async.Stream.map (which
-// requires @Sendable closures).

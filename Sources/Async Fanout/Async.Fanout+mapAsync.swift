@@ -1,17 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 extension Async.Fanout {
-    /// Async counterpart to ``map(_:completed:_:)`` for asynchronous work
-    /// such as remote reads.
+
     public func mapAsync<Item: Sendable, Result: Sendable>(
         _ items: [Item],
         completed: @escaping @Sendable (Swift.Int) -> Void = { _ in },

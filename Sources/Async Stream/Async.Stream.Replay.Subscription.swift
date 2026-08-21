@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
@@ -19,7 +8,7 @@ internal import Memory_Heap_Primitives
 import Storage_Contiguous_Primitives
 
 extension Async.Stream.Replay {
-    /// Subscription for replay stream.
+
     @usableFromInline
     actor Subscription {
         @usableFromInline
@@ -41,10 +30,7 @@ extension Async.Stream.Replay {
 }
 
 extension Async.Stream.Replay.Subscription {
-    // F-004: plain actor-isolated methods, called with a direct `await` from
-    // `Replay.State.send`/`.finish`'s sequential loop — see the comment
-    // there. No longer `nonisolated` and no longer spawns its own Task: that
-    // extra unstructured hop was the source of the ordering bug.
+
     @usableFromInline
     func receive(_ element: sending Element) {
         if let cont = continuation {
@@ -74,20 +60,6 @@ extension Async.Stream.Replay.Subscription {
             return nil
         }
 
-        // F-001: a bare `withCheckedContinuation` here is not cancellation-cooperative —
-        // if the consuming task is cancelled while suspended, nothing ever resumes the
-        // continuation and the consumer hangs permanently. `withTaskCancellationHandler`
-        // resumes it with `nil` (and marks the subscription `finished`) on cancellation.
-        //
-        // Race note: `onCancel` runs concurrently with `operation` and may fire before
-        // `registerContinuation(_:)` has stored the continuation. We close that window by
-        // re-checking `Task.isCancelled` *inside* `registerContinuation(_:)`: that check
-        // runs as a continuation of the caller's task (via the `await` into this actor),
-        // so it observes the same cancellation flag `onCancel` reacted to, regardless of
-        // which side of the actor's serial queue ran first. Either the cancellation
-        // handler resumes the continuation (already-stored case), or `registerContinuation`
-        // sees the cancellation itself and resumes immediately instead of storing
-        // (not-yet-stored case) — exactly one resume either way.
         return await withTaskCancellationHandler {
             await withCheckedContinuation { (cont: CheckedContinuation<Element?, Never>) in
                 registerContinuation(cont)

@@ -1,20 +1,9 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 public import Ownership_Primitives
 internal import Standard_Library_Extensions
 
 extension Async.Stream.Sample {
-    /// Internal state for sample.
+
     @usableFromInline
     actor State<Trigger: Sendable> {
         @usableFromInline
@@ -48,11 +37,7 @@ extension Async.Stream.Sample.State {
     func startSourceTask() {
         guard !started else { return }
         started = true
-        // Hoist the member into a local: an implicit-self reference
-        // (`source` = self.source) inside the `run` closure captures the
-        // actor alongside the explicit `isolated Self` parameter, and
-        // SILGen traps on asserts toolchains ("building SIL function
-        // type with multiple isolated parameters", ASTContext.cpp:5421).
+
         let source = self.source
         sourceTask = Task { [self] in
             await run { state in
@@ -79,18 +64,16 @@ extension Async.Stream.Sample.State {
         startSourceTask()
 
         while true {
-            // Wait for next trigger
+
             guard await triggerBox.next() != nil else {
                 sourceTask?.cancel()
                 return nil
             }
 
-            // Return latest if we have one
             if let value = latest {
                 return value
             }
 
-            // No value yet, but source might still produce
             if sourceDone {
                 return nil
             }

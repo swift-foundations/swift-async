@@ -1,20 +1,9 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 public import Ownership_Primitives
 internal import Standard_Library_Extensions
 
 extension Async.Stream.Latest {
-    /// Internal state for withLatestFrom.
+
     @usableFromInline
     actor State<Other: Sendable> {
         @usableFromInline
@@ -45,11 +34,7 @@ extension Async.Stream.Latest.State {
     func startOtherTask() {
         guard !started else { return }
         started = true
-        // Hoist the member into a local: an implicit-self reference
-        // (`other` = self.other) inside the `run` closure captures the
-        // actor alongside the explicit `isolated Self` parameter, and
-        // SILGen traps on asserts toolchains ("building SIL function
-        // type with multiple isolated parameters", ASTContext.cpp:5421).
+
         let other = self.other
         otherTask = Task { [self] in
             await run { state in
@@ -75,11 +60,10 @@ extension Async.Stream.Latest.State {
                 return nil
             }
 
-            // Only emit if we have a latest from other
             if let other = latestOther {
                 return (element, other)
             }
-            // Skip until we have a value from other
+
         }
     }
 }

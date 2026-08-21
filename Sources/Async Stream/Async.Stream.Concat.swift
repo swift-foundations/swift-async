@@ -1,39 +1,17 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 
 extension Async.Stream {
-    /// Concat operations namespace.
+
     public struct Concat: Sendable {}
 }
 
 extension Async.Stream {
-    /// Concat accessor for concatenation operations.
+
     public static var concat: Concat { Concat() }
 }
 
 extension Async.Stream.Concat {
-    /// Concatenates streams, emitting all elements from each in order.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let all = Async.Stream.concat(first, second)
-    /// // Emits all of 'first', then all of 'second'
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - a: First stream.
-    ///   - b: Second stream.
-    /// - Returns: A stream that emits all elements from both streams sequentially.
+
     public func callAsFunction(
         _ a: Async.Stream<Element>,
         _ b: Async.Stream<Element>
@@ -46,7 +24,6 @@ extension Async.Stream.Concat {
         }
     }
 
-    /// Concatenates three streams.
     public func callAsFunction(
         _ a: Async.Stream<Element>,
         _ b: Async.Stream<Element>,
@@ -55,7 +32,6 @@ extension Async.Stream.Concat {
         self(self(a, b), c)
     }
 
-    /// Concatenates an array of streams.
     public func callAsFunction(
         _ streams: [Async.Stream<Element>]
     ) -> Async.Stream<Element> {

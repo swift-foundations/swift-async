@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Synchronization
 import Testing
@@ -27,9 +16,7 @@ extension `Async.Fanout Tests`.Unit {
         let items = Array(0..<24)
 
         let results = await Async.Fanout(jobs: 24).mapAsync(items) { item in
-            // Completion order is the reverse of input order: the first
-            // item takes the longest. Any implementation that returned
-            // results as they landed would return this reversed.
+
             try? await Task.sleep(for: .milliseconds(5 * (24 - item)))
             return item
         }
@@ -84,7 +71,6 @@ extension `Async.Fanout Tests`.`Edge Case` {
     }
 }
 
-/// The running counts a fan-out reported, in the order it reported them.
 private final class Counts: Sendable {
     private let storage = Mutex([Swift.Int]())
 }

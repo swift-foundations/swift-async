@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
@@ -19,7 +8,7 @@ internal import Memory_Heap_Primitives
 import Storage_Contiguous_Primitives
 
 extension Async.Stream.Combine {
-    /// Internal state for combine latest operations.
+
     @usableFromInline
     actor State<A: Sendable, B: Sendable> {
         @usableFromInline

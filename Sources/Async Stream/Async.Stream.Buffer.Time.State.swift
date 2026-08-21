@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
@@ -22,7 +11,7 @@ public import Ownership_Primitives
 internal import Storage_Contiguous_Primitives
 
 extension Async.Stream.Buffer.Time {
-    /// Internal state for time-based buffering.
+
     @usableFromInline
     actor State {
         @usableFromInline
@@ -60,7 +49,7 @@ extension Async.Stream.Buffer.Time.State {
             let now = resolvedClock.now
             let remaining = now.duration(to: deadline)
             if remaining <= .zero {
-                // Time window expired
+
                 var result: [Element] = []
                 queue.drain { result.append($0) }
                 if result.isEmpty && upstreamDone {
@@ -69,7 +58,6 @@ extension Async.Stream.Buffer.Time.State {
                 return result
             }
 
-            // Race: get next element vs timer
             let result = await withTaskGroup(of: Async.Stream<Element>.Buffer.Time.Event.self) {
                 group in
                 group.addTask {
@@ -81,7 +69,7 @@ extension Async.Stream.Buffer.Time.State {
                 }
 
                 group.addTask {
-                    // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
+
                     try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: remaining))
                     return .timerExpired
                 }

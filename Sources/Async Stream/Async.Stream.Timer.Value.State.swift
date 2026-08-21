@@ -1,19 +1,8 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Clocks_Dependencies
 
 extension Async.Stream.Timer.Value {
-    /// Internal state for timer stream with value.
+
     @usableFromInline
     actor State {
         @usableFromInline
@@ -40,7 +29,6 @@ extension Async.Stream.Timer.Value.State {
         if fired { return nil }
         if Task.isCancelled { return nil }
 
-        // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
         try? await clock.sleep(for: delay)
         if Task.isCancelled { return nil }
 

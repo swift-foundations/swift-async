@@ -1,21 +1,10 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 public import Clock_Primitives
 internal import Clocks_Dependencies
 public import Ownership_Primitives
 
 extension Async.Stream.Throttle {
-    /// Internal state for throttle.
+
     @usableFromInline
     actor State {
         @usableFromInline
@@ -47,7 +36,7 @@ extension Async.Stream.Throttle.State {
             if let lastTime = lastEmitTime {
                 let elapsed = lastTime.duration(to: now)
                 if elapsed < duration {
-                    // Too soon, skip this element
+
                     continue
                 }
             }

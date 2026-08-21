@@ -1,19 +1,8 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 public import Ownership_Primitives
 
 extension Async.Stream {
-    /// Distinct operations namespace.
+
     public struct Distinct: Sendable {
         @usableFromInline
         let base: Async.Stream<Element>
@@ -26,12 +15,12 @@ extension Async.Stream {
 }
 
 extension Async.Stream {
-    /// Distinct accessor for distinct operations.
+
     public var distinct: Distinct { Distinct(base: self) }
 }
 
 extension Async.Stream.Distinct {
-    /// Internal state for distinctUntilChanged.
+
     @usableFromInline
     actor State {
         @usableFromInline
@@ -61,7 +50,7 @@ extension Async.Stream.Distinct.State {
             guard let element = await box.next() else { return nil }
 
             if let prev = previous, areEqual(prev, element) {
-                // Skip duplicate
+
                 continue
             }
 
@@ -71,33 +60,15 @@ extension Async.Stream.Distinct.State {
     }
 }
 
-// MARK: - UntilChanged Methods
-
 extension Async.Stream.Distinct where Element: Equatable {
-    /// Suppresses consecutive duplicate elements.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let distinct = [1, 1, 2, 2, 2, 3, 1].asStream().distinct.untilChanged()
-    /// // Emits: 1, 2, 3, 1
-    /// ```
-    ///
-    /// - Returns: A stream without consecutive duplicates.
+
     public func untilChanged() -> Async.Stream<Element> {
         untilChanged(==)
     }
 }
 
 extension Async.Stream.Distinct {
-    /// Suppresses consecutive elements that compare equal.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let distinct = users.distinct.untilChanged { $0.id == $1.id }
-    /// ```
-    ///
-    /// - Parameter areEqual: A function to compare consecutive elements.
-    /// - Returns: A stream without consecutive duplicates.
+
     public func untilChanged(
         _ areEqual: @escaping @Sendable (Element, Element) -> Bool
     ) -> Async.Stream<Element> {
@@ -109,15 +80,6 @@ extension Async.Stream.Distinct {
         }
     }
 
-    /// Suppresses consecutive elements with equal key values.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let distinct = users.distinct.untilChanged { $0.id }
-    /// ```
-    ///
-    /// - Parameter key: A function to extract the key to compare.
-    /// - Returns: A stream without consecutive duplicates by key.
     public func untilChanged<Key: Equatable & Sendable>(
         by key: @escaping @Sendable (Element) -> Key
     ) -> Async.Stream<Element> {

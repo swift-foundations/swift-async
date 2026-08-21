@@ -1,23 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 extension Async.Fanout {
-    /// Runs `work` over `items` with at most ``jobs`` in flight, returning
-    /// results in input order.
-    ///
-    /// `completed` is called once per finished item with the running count,
-    /// from the consuming context rather than from the work itself, so it
-    /// observes a monotonic sequence and never runs concurrently with
-    /// itself. It exists for progress reporting; it must not influence the
-    /// result.
+
     public func map<Item: Sendable, Result: Sendable>(
         _ items: [Item],
         completed: @escaping @Sendable (Swift.Int) -> Void = { _ in },

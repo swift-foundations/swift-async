@@ -1,33 +1,9 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Clocks_Dependencies
 internal import Ownership_Primitives
 
-// MARK: - Timeout
-
 extension Async.Stream {
-    /// Fails if no element arrives within the duration.
-    ///
-    /// The timeout resets after each element.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let withTimeout = stream.timeout(.seconds(5))
-    /// // Completes with nil if no element for 5 seconds
-    /// ```
-    ///
-    /// - Parameter duration: The maximum time to wait between elements.
-    /// - Returns: A stream that completes on timeout.
+
     public func timeout(_ duration: Duration) -> Self {
         Self { [self] in
             let box = Async.Stream<Element>.Iterator.Box(makeAsyncIterator())
@@ -55,7 +31,7 @@ extension Async.Stream {
                         return nil
                     }
                 } catch {
-                    // Timeout
+
                     return nil
                 }
             }

@@ -1,21 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 extension Async {
-    /// An asynchronous sequence that includes only elements matching a predicate.
-    ///
-    /// `Filter` preserves caller isolation — the predicate runs on the actor
-    /// that created the pipeline, not on the cooperative pool.
-    ///
-    /// Created by calling `.filter(_:)` on any `AsyncSequence`.
+
     public struct Filter<Base: AsyncSequence>: AsyncSequence {
         public typealias Element = Base.Element
 
@@ -55,7 +39,7 @@ extension Async {
 
             @inlinable
             public mutating func next(
-                // swiftlint:disable:next no_any_protocol_existential - exact AsyncIteratorProtocol.next(isolation:) requirement signature (stdlib; rule-exemptions protocol-requirement shape)
+
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Base.Element? {
                 while true {
@@ -81,19 +65,9 @@ extension Async {
     }
 }
 
-// MARK: - AsyncSequence Conformance
-
 extension Async.Filter {
     @inlinable
     public func makeAsyncIterator() -> Iterator {
         Iterator(baseIterator: base.makeAsyncIterator(), predicate: predicate)
     }
 }
-
-// MARK: - Sendable
-
-// Async.Filter is intentionally non-Sendable. The predicate closures are
-// nonisolated(nonsending) — they inherit the caller's isolation and may
-// capture non-Sendable actor-isolated state. Claiming Sendable would be
-// unsound. For Sendable pipelines, use Async.Stream.filter (which
-// requires @Sendable closures).

@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
@@ -21,12 +10,12 @@ internal import Standard_Library_Extensions
 import Storage_Contiguous_Primitives
 
 extension Async.Stream.Map.Flat {
-    /// Namespace for latest operations.
+
     public enum Latest {}
 }
 
 extension Async.Stream.Map.Flat.Latest {
-    /// Internal state for flat map latest.
+
     @usableFromInline
     actor State<U: Sendable> {
         @usableFromInline
@@ -68,28 +57,24 @@ extension Async.Stream.Map.Flat.Latest.State {
     @usableFromInline
     func next() async -> U? {
         while true {
-            // Return buffered inner value if available
+
             if !queue.isEmpty {
                 return queue.dequeue()!
             }
 
-            // If inner is done and outer is done, we're complete
             if innerDone && outerDone {
                 return nil
             }
 
-            // Try to get next outer element
             if innerDone {
                 guard let outerElement = await outerBox.next() else {
                     outerDone = true
                     return nil
                 }
 
-                // Cancel any existing inner task
                 innerTask?.cancel()
                 innerDone = false
 
-                // Start new inner stream
                 let innerStream: Async.Stream<U>
                 switch transform {
                 case .sync(let f): innerStream = f(outerElement)
@@ -105,7 +90,6 @@ extension Async.Stream.Map.Flat.Latest.State {
                 }
             }
 
-            // Wait for inner value or completion
             return await withCheckedContinuation { cont in
                 self.continuation = cont
             }
@@ -127,7 +111,7 @@ extension Async.Stream.Map.Flat.Latest.State {
         innerDone = true
         if let cont = continuation {
             continuation = nil
-            // Resume to re-check state
+
             cont.resume(returning: nil)
         }
     }

@@ -1,22 +1,7 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Testing
 
-// MARK: - Combination Operator Unit Tests
-
 extension `Async.Stream Tests`.Unit {
-
-    // MARK: Merge
 
     @Test
     func `merge combines elements from two streams`() async {
@@ -29,7 +14,6 @@ extension `Async.Stream Tests`.Unit {
             results.append(value)
         }
 
-        // Merge doesn't guarantee order, just that all elements appear
         #expect(results.sorted() == [1, 2, 3, 4, 5, 6])
     }
 
@@ -89,8 +73,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results.sorted() == [1, 2, 3])
     }
 
-    // MARK: Concat (additional variants)
-
     @Test
     func `concat three streams`() async {
         let a = Async.Stream.from([1])
@@ -123,8 +105,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results == [1, 2, 3, 4, 5, 6])
     }
 
-    // MARK: Zip (transform variant)
-
     @Test
     func `zip with transform combines elements`() async {
         let a = Async.Stream.from([1, 2, 3])
@@ -155,13 +135,9 @@ extension `Async.Stream Tests`.Unit {
         #expect(results[1].0 == 2 && results[1].1 == "b")
     }
 
-    // MARK: FlatMapLatest
-
     @Test
     func `flatMapLatest switches to latest inner stream`() async {
-        // Each outer element produces a stream of [n, n*10]
-        // Since outer elements arrive instantly, each new one cancels the previous
-        // The last outer element (3) should produce its full inner stream
+
         let stream = Async.Stream.from([1, 2, 3])
             .map.flat.latest { n in
                 Async.Stream.from([n, n * 10])
@@ -172,7 +148,6 @@ extension `Async.Stream Tests`.Unit {
             results.append(value)
         }
 
-        // At minimum, the last inner stream [3, 30] should complete
         #expect(results.contains(3))
         #expect(results.contains(30))
     }

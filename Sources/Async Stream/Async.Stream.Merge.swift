@@ -1,39 +1,18 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Standard_Library_Extensions
 
 extension Async.Stream {
-    /// Merge operations namespace.
+
     public struct Merge: Sendable {}
 }
 
 extension Async.Stream {
-    /// Merge accessor for merge operations.
+
     public static var merge: Merge { Merge() }
 }
 
 extension Async.Stream.Merge {
-    /// Merges two streams, emitting elements as they arrive.
-    ///
-    /// ## Usage
-    /// ```swift
-    /// let merged = Async.Stream.merge(stream1, stream2)
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - a: First stream.
-    ///   - b: Second stream.
-    /// - Returns: A stream that emits from both sources.
+
     public func callAsFunction(
         _ a: Async.Stream<Element>,
         _ b: Async.Stream<Element>
@@ -41,7 +20,6 @@ extension Async.Stream.Merge {
         Async.Stream<Element> {
             let state = Async.Stream<Element>.Merge.State()
 
-            // Start both streams
             let task1 = Task {
                 await state.run { state in
                     for await element in a {
@@ -60,8 +38,6 @@ extension Async.Stream.Merge {
                 }
             }
 
-            // F-002: producer-task cancellation now also has a deinit
-            // backstop — see Async.Stream.Merge.Cursor.swift.
             let cursor = Async.Stream<Element>.Merge.Cursor(
                 state: state,
                 task1: task1,
@@ -74,7 +50,6 @@ extension Async.Stream.Merge {
         }
     }
 
-    /// Merges three streams.
     public func callAsFunction(
         _ a: Async.Stream<Element>,
         _ b: Async.Stream<Element>,
@@ -83,7 +58,6 @@ extension Async.Stream.Merge {
         self(self(a, b), c)
     }
 
-    /// Merges an array of streams.
     public func callAsFunction(
         _ streams: [Async.Stream<Element>]
     ) -> Async.Stream<Element> {

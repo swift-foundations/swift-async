@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
@@ -22,7 +11,7 @@ public import Ownership_Primitives
 import Storage_Contiguous_Primitives
 
 extension Async.Stream.Buffer.Window {
-    /// Internal state for count-or-time buffering.
+
     @usableFromInline
     actor State {
         @usableFromInline
@@ -64,7 +53,7 @@ extension Async.Stream.Buffer.Window.State {
         let deadline = resolvedClock.now.advanced(by: duration)
 
         while true {
-            // Check count first
+
             if elementCount >= count {
                 var result: [Element] = []
                 for _ in 0..<count {
@@ -88,17 +77,16 @@ extension Async.Stream.Buffer.Window.State {
             let now = resolvedClock.now
             let remaining = now.duration(to: deadline)
             if remaining <= .zero {
-                // Time window expired
+
                 var result: [Element] = []
                 queue.drain { result.append($0) }
                 elementCount = 0
                 if result.isEmpty {
-                    continue  // Start new window
+                    continue
                 }
                 return result
             }
 
-            // Race: get next element vs timer
             let result = await withTaskGroup(of: Async.Stream<Element>.Buffer.Time.Event.self) {
                 group in
                 group.addTask {
@@ -110,7 +98,7 @@ extension Async.Stream.Buffer.Window.State {
                 }
 
                 group.addTask {
-                    // swiftlint:disable:next no_try_optional - Clock.Any.sleep witnesses stdlib Swift.Clock.sleep, declared untyped async throws; no E for do throws(E) to name (rule-exemptions untyped-callee carve-out)
+
                     try? await resolvedClock.sleep(until: resolvedClock.now.advanced(by: remaining))
                     return .timerExpired
                 }
@@ -134,7 +122,6 @@ extension Async.Stream.Buffer.Window.State {
                     elementCount = 0
                     return result
                 }
-            // Empty buffer, start new window
 
             case .upstreamComplete:
                 upstreamDone = true

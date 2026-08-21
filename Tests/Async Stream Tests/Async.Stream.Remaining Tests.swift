@@ -1,18 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async
 import Testing
-
-// MARK: - Remaining Operator Unit Tests
 
 private actor Counter {
     var value = 0
@@ -26,8 +13,6 @@ extension Counter {
 }
 
 extension `Async.Stream Tests`.Unit {
-
-    // MARK: Generate
 
     @Test
     func `generate creates stream from generator function`() async {
@@ -44,8 +29,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results == [1, 2, 3, 4, 5])
     }
 
-    // MARK: Never
-
     @Test
     func `never does not emit when cancelled`() async {
         let stream = Async.Stream<Int>.never
@@ -58,8 +41,6 @@ extension `Async.Stream Tests`.Unit {
         let count = await task.value
         #expect(count == 0)
     }
-
-    // MARK: Async Map
 
     @Test
     func `async map transforms elements`() async {
@@ -76,8 +57,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results == ["1", "2", "3"])
     }
 
-    // MARK: Async Filter
-
     @Test
     func `async filter removes elements`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5])
@@ -93,8 +72,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(results == [2, 4])
     }
 
-    // MARK: Async CompactMap
-
     @Test
     func `async compactMap transforms and filters`() async {
         let stream = Async.Stream.from(["1", "two", "3"])
@@ -109,8 +86,6 @@ extension `Async.Stream Tests`.Unit {
 
         #expect(results == [1, 3])
     }
-
-    // MARK: First (with predicate)
 
     @Test
     func `first where returns first matching element`() async {
@@ -138,8 +113,6 @@ extension `Async.Stream Tests`.Unit {
         #expect(count == 0)
     }
 
-    // MARK: Last (with predicate)
-
     @Test
     func `last where returns last matching element`() async {
         let stream = Async.Stream.from([1, 2, 3, 4, 5])
@@ -165,8 +138,6 @@ extension `Async.Stream Tests`.Unit {
 
         #expect(count == 0)
     }
-
-    // MARK: DistinctUntilChanged (custom equality)
 
     @Test
     func `distinctUntilChanged with custom equality`() async {
