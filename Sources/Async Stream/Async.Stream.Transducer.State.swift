@@ -9,7 +9,7 @@ public import Async_Primitives
 internal import Buffer_Primitive
 internal import Buffer_Ring_Bounded_Primitive
 public import Buffer_Ring_Primitive
-public import Column_Primitives
+import Column_Primitives
 internal import Memory_Allocator_Primitive
 internal import Memory_Heap_Primitives
 public import Ownership_Primitives
