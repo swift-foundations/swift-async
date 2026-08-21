@@ -64,10 +64,6 @@ let package = Package(
         ),
         .package(url: "https://github.com/swift-foundations/swift-clocks.git", branch: "main"),
         .package(
-            url: "https://github.com/swift-foundations/swift-dependencies.git",
-            branch: "main"
-        ),
-        .package(
             url: "https://github.com/swift-foundations/swift-clocks-dependencies.git",
             branch: "main"
         ),
@@ -188,7 +184,6 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .enableExperimentalFeature("LifetimeDependence"),
         .enableExperimentalFeature("Lifetimes"),
-        .enableExperimentalFeature("SuppressedAssociatedTypes"),
         .enableUpcomingFeature("InferIsolatedConformances"),
         .enableUpcomingFeature("LifetimeDependence"),
     ]
